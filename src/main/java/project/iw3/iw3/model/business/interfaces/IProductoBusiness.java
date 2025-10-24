@@ -1,6 +1,7 @@
-package project.iw3.iw3.model.business;
+package project.iw3.iw3.model.business.interfaces;
 
 import project.iw3.iw3.model.Producto;
+import project.iw3.iw3.model.business.exceptions.BusinessException;
 
 public interface IProductoBusiness {
     
