@@ -22,7 +22,7 @@ import project.iw3.iw3.util.StandartResponse;
 
 
 @RestController
-@RequestMapping("/api/clientes")
+@RequestMapping("/api/v1/clientes")
 public class ClienteRestController {
 	
 
@@ -132,6 +132,25 @@ public ResponseEntity<StandartResponse> addCliente(@RequestBody Cliente cliente)
             return new ResponseEntity<>(
                     standartResponseBusiness.build(HttpStatus.INTERNAL_SERVER_ERROR, e, e.getMessage()),
                     HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+
+      @DeleteMapping(value = "/{id}")
+    public ResponseEntity<?> delete(@PathVariable("id") long id) {
+        try {
+            clienteBusiness.delete(id);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(
+                standartResponseBusiness.build(HttpStatus.NOT_FOUND, e, e.getMessage()),
+                HttpStatus.NOT_FOUND
+            );
+        } catch (BusinessException e) {
+            return new ResponseEntity<>(
+                standartResponseBusiness.build(HttpStatus.INTERNAL_SERVER_ERROR, e, e.getMessage()),
+                HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
     }

@@ -8,6 +8,8 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Table(name = "camiones")
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -26,7 +28,8 @@ public class Camion {
 
     private String descripcion;
 
-    //Un camion puede tener varias cisternas
+    //Un camion puede tener varias cisternasz
+    @JsonManagedReference
     @OneToMany(mappedBy = "camion")
     private Set<Cisterna> cisterna = new HashSet<>();
 }

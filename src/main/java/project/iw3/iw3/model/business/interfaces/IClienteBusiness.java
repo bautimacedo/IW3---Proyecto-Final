@@ -5,13 +5,15 @@ import java.util.List;
 import project.iw3.iw3.model.Cliente;
 
 public interface IClienteBusiness {  
-    List<Cliente> list() throws BusinessException; //Listar clientes
+    public List<Cliente> list() throws BusinessException; //Listar clientes
 
-    Cliente load(long id) throws NotFoundException,BusinessException; //Cargar un cliente con id
+    public Cliente load(long id) throws NotFoundException,BusinessException; //Cargar un cliente con id
 
-    Cliente load(String nombreEmpresa) throws NotFoundException,BusinessException; //Carga un cliente con nombre
+    public Cliente load(String nombreEmpresa) throws NotFoundException,BusinessException; //Carga un cliente con nombre
 
-    Cliente add(Cliente cliente) throws FoundException,BusinessException; //Agregar cliente
+    public Cliente add(Cliente cliente) throws FoundException,BusinessException; //Agregar cliente
 
     public Cliente update(Cliente cliente) throws FoundException,NotFoundException,BusinessException; //Actualizar
+
+    public void delete(long id) throws NotFoundException, BusinessException;
 }

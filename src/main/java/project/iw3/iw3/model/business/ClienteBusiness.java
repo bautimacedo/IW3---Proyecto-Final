@@ -68,4 +68,15 @@ public class ClienteBusiness implements IClienteBusiness {
         return clienteRepository.save(cliente);
     }
     
+      @Override
+    public void delete(long id) throws NotFoundException, BusinessException {
+        load(id);
+
+        try {
+            clienteRepository.deleteById(id);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
+        }
+    }
 }

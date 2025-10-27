@@ -1,13 +1,18 @@
 package project.iw3.iw3.model.business;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import project.iw3.iw3.model.Camion;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.model.business.interfaces.ICamionBusiness;
 import project.iw3.iw3.model.persistence.CamionRepository;
+import lombok.extern.slf4j.Slf4j;
 
+@Service
+@Slf4j
 public class CamionBusiness implements ICamionBusiness {
 
     @Autowired
@@ -77,6 +82,18 @@ public class CamionBusiness implements ICamionBusiness {
             throw e;
         } catch (Exception e) {
             throw new BusinessException(e.getMessage(), e);
+        }
+    }
+
+      @Override
+    public void delete(long id) throws NotFoundException, BusinessException {
+        load(id);
+
+        try {
+            camionRepository.deleteById(id);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
         }
     }
    

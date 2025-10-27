@@ -8,9 +8,11 @@ import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.model.business.interfaces.ICisternaBusiness;
 import project.iw3.iw3.model.persistence.CisternaRepository;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class CisternaBusiness implements ICisternaBusiness {
 
@@ -81,5 +83,18 @@ public class CisternaBusiness implements ICisternaBusiness {
             throw new BusinessException(e.getMessage(), e);
         }
     }
+
+     @Override
+    public void delete(long id) throws NotFoundException, BusinessException {
+        load(id);
+
+        try {
+            cisternaRepository.deleteById(id);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
+        }
+    }
+   
 
 }
