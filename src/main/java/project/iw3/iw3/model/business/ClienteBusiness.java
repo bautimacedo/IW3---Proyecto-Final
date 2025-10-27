@@ -3,7 +3,9 @@ package project.iw3.iw3.model.business;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
 import project.iw3.iw3.model.Cliente;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
@@ -11,6 +13,8 @@ import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.model.business.interfaces.IClienteBusiness;
 import project.iw3.iw3.model.persistence.ClienteRepository;
 
+@Service
+@Slf4j
 public class ClienteBusiness implements IClienteBusiness {
 
     @Autowired
