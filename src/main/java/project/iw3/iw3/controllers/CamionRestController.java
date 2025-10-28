@@ -13,10 +13,9 @@ import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.model.business.interfaces.ICamionBusiness;
 import project.iw3.iw3.util.IStandartResponseBusiness;
-import project.iw3.iw3.util.StandartResponse;
 
 @RestController
-@RequestMapping("/api/v1/camiones")
+@RequestMapping(Constants.URL_CAMIONES)
 public class CamionRestController {
 
     @Autowired

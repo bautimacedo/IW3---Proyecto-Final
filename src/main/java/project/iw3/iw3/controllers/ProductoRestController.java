@@ -14,11 +14,6 @@ import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.util.IStandartResponseBusiness;
 
-// OJO: esto lo tenés que tener igual que el profe.
-// Por ejemplo:
-// public class Constants {
-//     public static final String URL_PRODUCTOS = "/api/productos";
-// }
 
 @RestController
 @RequestMapping(Constants.URL_PRODUCTS)
@@ -49,7 +44,6 @@ public class ProductoRestController {
         try {
             Producto creado = productoBusiness.add(producto);
 
-            // igual que el profe: devolver Location en el header y 201, sin body
             HttpHeaders headers = new HttpHeaders();
             headers.set("location", Constants.URL_PRODUCTS + "/" + creado.getId());
 

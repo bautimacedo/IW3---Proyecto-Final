@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +21,7 @@ import project.iw3.iw3.util.StandartResponse;
 
 
 @RestController
-@RequestMapping("/api/v1/clientes")
+@RequestMapping(Constants.URL_CLIENTES)
 public class ClienteRestController {
 	
 
