@@ -67,7 +67,7 @@ public class ProductoBusiness implements IProductoBusiness {
             return productDAO.findAll();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw BusinessException.builder().ex(e).message(e.getMessage()).build();
+            throw BusinessException.builder().ex(e).build();
         }
     }
 
