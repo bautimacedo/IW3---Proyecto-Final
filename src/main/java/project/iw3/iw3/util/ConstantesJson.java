@@ -21,14 +21,14 @@ public class ConstantesJson {
  // Constantes para el nodo Truck
     public static final String[] CAMION_NODE_ATTRIBUTES = {"truck", "Truck", "vehicle", "Vehicle"};
     public static final String[] CAMION_ID_ATTRIBUTES = {"id", "id_truck", "code", "truck_code"};
-    public static final String[] CAMION_PATENTE_ATTRIBUTES = {"truck_plate", "truck_plate_number", "license_plate", "truck_license_plate"};
+    public static final String[] CAMION_PATENTE_ATTRIBUTES = {"truck_plate", "truck_plate_number", "license_plate", "truck_license_plate", "licence_plate", "truck_licence_plate"};
     public static final String[] CAMION_DESCRIPCION_ATTRIBUTES = {"description", "truck_description"};
     
  // Constantes para el nodo Tanker
     public static final String[] CISTERNA_NODE_ATTRIBUTES = {"tanks"};
     public static final String[] CISTERNA_CAPACIDAD_LITROS_ATTRIBUTES = {"capacity_liters", "capacity"};
     public static final String[] CISTERNA_ID_ATTRIBUTES = {"id", "id_tanker", "code", "tanker_code"};
-    public static final String[] CISTERA_LICENCIA_ATTRIBUTES = {"license", "license_plate", "plate"};
+    public static final String[] CISTERA_LICENCIA_ATTRIBUTES = {"license", "license_plate", "plate", "licence", "licence_plate"};
     
  // Constantes para el nodo Customer
     public static final String[] CLIENTE_NODE_ATTRIBUTES = {"customer", "Customer", "client", "Client"};

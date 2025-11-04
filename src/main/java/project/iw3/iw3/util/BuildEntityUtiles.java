@@ -69,17 +69,17 @@ public class BuildEntityUtiles {
         	for (JsonNode cisternasNode : cisternaNode) { //bucle for each, recorremos cisternaNode uno x uno
         		Cisterna cisterna = new Cisterna();
         		
-        		Long cisternaId = JsonUtiles.getLong(cisternaNode, ConstantesJson.CISTERNA_ID_ATTRIBUTES, 0);
+        		Long cisternaId = JsonUtiles.getLong(cisternasNode, ConstantesJson.CISTERNA_ID_ATTRIBUTES, 0);
                 if (cisternaId != null && cisternaId != 0) {
                     cisterna.setId(cisternaId);
                 }
                 
-                Long capacidadLitros = JsonUtiles.getLong(cisternaNode, ConstantesJson.CISTERNA_CAPACIDAD_LITROS_ATTRIBUTES , 0);
+                Long capacidadLitros = JsonUtiles.getLong(cisternasNode, ConstantesJson.CISTERNA_CAPACIDAD_LITROS_ATTRIBUTES , 0);
                 if (capacidadLitros != null && capacidadLitros != 0) {
                     cisterna.setCapacidadLitros(capacidadLitros);
                 }
                 
-                String licencia = JsonUtiles.getString(camionNode, ConstantesJson.CISTERA_LICENCIA_ATTRIBUTES , "");
+                String licencia = JsonUtiles.getString(cisternasNode, ConstantesJson.CISTERA_LICENCIA_ATTRIBUTES , "");
                 if (licencia != null && !licencia.isEmpty()) {
                     cisterna.setLicencia(licencia);
                 }
