@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import project.iw3.iw3.model.Cliente;
 import project.iw3.iw3.model.Producto;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
@@ -129,5 +130,28 @@ public class ProductoBusiness implements IProductoBusiness {
         }
         return r.get();
     }
+
+	@Override
+	public Producto loadOrCreate(Producto producto) throws BusinessException, NotFoundException {
+		if (producto == null) {
+			  throw BusinessException.builder().message("Producto no puede ser null").build();
+		  }
+		
+		Producto entity = null;
+		
+		try {
+			  
+			  entity = this.load(producto.getNombre());
+			  
+		  }catch(NotFoundException e) {
+			  try {
+				 entity = this.add(producto); 
+			  }catch(FoundException ignored) {
+				  //no va a pasar
+			  }
+		  }
+		  
+		  return entity;
+	}
 
 }

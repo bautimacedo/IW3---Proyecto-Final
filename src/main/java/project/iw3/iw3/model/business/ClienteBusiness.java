@@ -50,7 +50,7 @@ public class ClienteBusiness implements IClienteBusiness {
         }
 
     }; 
-
+    
     @Override
     public Cliente add(Cliente cliente) throws FoundException,BusinessException{ //Agregar cliente
         if (clienteRepository.findByNombreEmpresa(cliente.getNombreEmpresa()).isPresent()){
@@ -79,4 +79,28 @@ public class ClienteBusiness implements IClienteBusiness {
             throw BusinessException.builder().ex(e).build();
         }
     }
+
+	  @Override
+	  public Cliente loadOrCreate(Cliente cliente) throws BusinessException, NotFoundException {
+		  if (cliente == null) {
+			  throw BusinessException.builder().message("Cliente no puede ser null").build();
+		  }
+		  
+		  Cliente entity = null;
+		  
+		  try {
+			  
+			  entity = this.load(cliente.getNombreEmpresa());
+			  
+		  }catch(NotFoundException e) {
+			  try {
+				 entity = this.add(cliente); 
+			  }catch(FoundException ignored) {
+				  //no va a pasar
+			  }
+		  }
+		  
+		  return entity;
+		
+	  }
 }

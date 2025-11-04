@@ -2,7 +2,7 @@ package project.iw3.iw3.model.business.interfaces;
 
 import java.util.List;
 
-
+import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.Producto;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
@@ -21,5 +21,7 @@ public interface IProductoBusiness {
     public Producto update(Producto producto) throws FoundException, BusinessException, NotFoundException;
     
     public void delete(long id) throws NotFoundException, BusinessException;
+    
+    public Producto loadOrCreate(Producto producto) throws BusinessException, NotFoundException;
 
 }

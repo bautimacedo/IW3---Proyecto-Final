@@ -44,6 +44,45 @@ public class ChoferBusiness implements IChoferBusiness {
         throw BusinessException.builder().ex(e).build();
        }
     }
+    
+    @Override
+	public Chofer loadOrCreate(Chofer chofer) throws BusinessException{
+		if (chofer == null) {
+	        throw BusinessException.builder().message("Chofer no puede ser null").build();
+	    }
+		
+		final String dni = chofer.getDni() == null ? null : chofer.getDni().trim();
+		
+		if (dni == null || dni.isBlank()) {
+	        throw BusinessException.builder()
+	                .message("Se requiere documento para loadOrCreate")
+	                .build();
+	    }
+		
+		Chofer entity = null;
+		
+		//intentamos cargar x dni
+		try {
+			entity = this.add(chofer); 
+			
+		// si existe el chofer, entonces lo busca.
+	    }catch(FoundException e){
+	    	
+	    	try {
+	    		entity = this.load(dni);
+	    	} catch(NotFoundException nf) {
+	    		throw BusinessException.builder()
+                .message("Estado inconsistente: Found por DNI pero luego no se pudo cargar: " + dni)
+                .ex(nf)
+                .build();
+	    	}
+	    	
+	    } catch (BusinessException be) {
+	        throw be; // re-propago
+	    }
+		
+		return entity;
+	}
 
     @Override
     public Chofer load(long id) throws NotFoundException, BusinessException {
@@ -74,7 +113,9 @@ public class ChoferBusiness implements IChoferBusiness {
         }
         return r.get();
     }
-
+    
+	
+	
     @Override
     public List<Chofer> list() throws BusinessException {
         try {
@@ -121,5 +162,7 @@ public class ChoferBusiness implements IChoferBusiness {
             throw BusinessException.builder().ex(e).build();
         }
     }
+
+
     
 }

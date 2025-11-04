@@ -3,6 +3,7 @@ package project.iw3.iw3.model.business.interfaces;
 import java.util.List;
 
 import project.iw3.iw3.model.Camion;
+import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
@@ -20,5 +21,7 @@ public interface ICamionBusiness {
     Camion update(Camion camion) throws FoundException, NotFoundException, BusinessException;
 
     void delete(long id) throws NotFoundException, BusinessException;
+    
+    public Camion loadOrCreate(Camion camion) throws BusinessException, NotFoundException;
     
 }

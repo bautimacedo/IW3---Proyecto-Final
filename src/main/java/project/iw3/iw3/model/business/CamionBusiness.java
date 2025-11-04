@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import project.iw3.iw3.model.Camion;
+import project.iw3.iw3.model.Chofer;
+import project.iw3.iw3.model.Cisterna;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
@@ -96,5 +98,42 @@ public class CamionBusiness implements ICamionBusiness {
             throw BusinessException.builder().ex(e).build();
         }
     }
+
+	  @Override
+	  public Camion loadOrCreate(Camion camion) throws BusinessException, NotFoundException {
+		 
+		  if (camion == null) {
+			  throw BusinessException.builder().message("Camion no puede ser null").build();
+		  }
+		  
+		  Camion entity = null;
+		  
+		  try {
+			  
+			  entity = this.load(camion.getPatente());
+			  
+		  } catch(NotFoundException ignore) {
+			  // si no lo encontramos lo creamos
+			  try {
+				  entity =  this.add(camion);
+			  } catch (FoundException ignored) {
+				  // esto es imposible que pase
+			  }
+		  }
+		  
+		  return entity;
+		  
+		  
+		  
+		  // puede pasar que el camion ya existia, pero viene con distintas cisternas. en ese caso, tenemos que agregarlas
+		  /*
+		  for (Cisterna cisterna : camion.getCisterna()) { // aca obtenemos del camion que viene toda la lista de cisternas y las recorremos una por una con cisterna
+			  try {
+				  cisterna.setCamion(camion.get());
+			  }
+		  }
+		  */
+		  
+	  }
    
 }    

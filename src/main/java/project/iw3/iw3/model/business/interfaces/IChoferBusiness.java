@@ -20,4 +20,6 @@ public interface IChoferBusiness {
     public Chofer update(Chofer chofer) throws FoundException, BusinessException, NotFoundException;
 
     public void delete(long id) throws NotFoundException, BusinessException;
+    
+    public Chofer loadOrCreate(Chofer chofer) throws BusinessException, NotFoundException;
 }
