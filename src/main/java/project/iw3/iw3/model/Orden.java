@@ -51,20 +51,20 @@ public class Orden {
     // va a tener un tipo de producto a cargar --> Muchas ordenes asociadas a un solo producto.
     //id_producto es el nombre de la columna FK que se creara en la tabla orden
     @ManyToOne
-    @JoinColumn(name = "id_producto", nullable = false)
+    @JoinColumn(name = "id_producto")
     private Producto producto;
     
     
     @ManyToOne
-    @JoinColumn(name = "id_camion", nullable = false)
+    @JoinColumn(name = "id_camion")
     private Camion camion;
     
     @ManyToOne
-    @JoinColumn(name = "id_chofer", nullable = false)
+    @JoinColumn(name = "id_chofer")
     private Chofer chofer;
     
     @ManyToOne
-    @JoinColumn(name = "id_cliente", nullable = false)
+    @JoinColumn(name = "id_cliente")
     private Cliente cliente;
     
     
@@ -74,16 +74,16 @@ public class Orden {
     
     
     // Cantidad de producto a cargar
-    @Column(nullable = false)
-    private float preset;
+    @Column()
+    private Float preset;
     
     // peso sin producto
-    @Column(nullable = false)
-    private float tara;
+    @Column()
+    private Float tara;
     
     // peso con producto
-    @Column(nullable = false)
-    private float pesoFinal;
+    @Column()
+    private Float pesoFinal;
     
     
     
@@ -91,31 +91,20 @@ public class Orden {
     @Column()
     private Date ultimaFechaInformacion;
     
-    @Column(nullable = false)
-    private float ultimaMasaAcumulada;
-    
-    @Column(nullable = false)
-    private float ultimaDensidad;
-    
-    @Column(nullable = false)
-    private float ultimaTemperatura;
-    
-    @Column(nullable = false)
-    private float ultimaFlowRate;
-    
-    
-    
-    
+    @Column()
+    private Float ultimaMasaAcumulada;
     
     @Column()
-    private Date fechaPesajeInicial;
+    private Float ultimaDensidad;
     
     @Column()
-    private Date fechaPesajeFinal;
+    private Float ultimaTemperatura;
     
     @Column()
-    private Date fechaComienzoCargaProducto;
+    private Float ultimaFlowRate;
     
+    
+
     @Column()
-    private Date fechaFinCargaProducto;
+    private Date fechaPrevistaDeCarga; // hay que agregar esto.
 }

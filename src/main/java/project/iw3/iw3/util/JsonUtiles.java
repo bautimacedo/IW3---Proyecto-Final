@@ -284,7 +284,7 @@ public final class JsonUtiles {
 		  
 		  if(patenteCamion == null) return null;
 		  
-		  JsonNode cisternaNode = camionNode.get("tanks");
+		  JsonNode cisternaNode = getJsonNode(camionNode, ConstantesJson.CISTERNA_NODE_ATTRIBUTES);
 		  
 		  try {
 			  

@@ -74,4 +74,41 @@ public class OrdenRestController extends BaseRestController {
         }
   
     }  
+    
+    
+    // PUNTO 2)
+    
+    @PostMapping(value = "/pesaje-inicial", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<?> registerInitialWeighing(
+            @RequestHeader("Patente") String patente,
+            @RequestHeader("Tara") float tara) {
+    	
+    	try {
+    		Orden orden = ordenBusiness.registrarPesoInicial(patente, tara);
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.set("Order-Id", String.valueOf(orden.getId()));
+            return new ResponseEntity<>(orden.getPassword().toString(), responseHeaders, HttpStatus.OK);
+    	} catch (Exception e) {
+    		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+    	}
+    	
+        
+    }
+    
+    
+    //PUNTO 4)
+    @PostMapping("/cerrar-carga")
+    public ResponseEntity<?> closeOrder(@RequestHeader("IdOrden") Long orderId) {
+    	
+    	
+    	try{
+    		Orden orden = ordenBusiness.cerrarOrden(orderId);
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.set("Order-Id", String.valueOf(orden.getId()));
+            return new ResponseEntity<>(responseHeaders, HttpStatus.OK);
+    	}catch (Exception e) {
+    		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+    	}
+        
+    }
 }

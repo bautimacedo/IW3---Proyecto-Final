@@ -20,7 +20,9 @@ import project.iw3.iw3.model.business.interfaces.ICisternaBusiness;
 import project.iw3.iw3.model.business.interfaces.IClienteBusiness;
 import project.iw3.iw3.model.business.interfaces.IOrdenBusiness;
 import project.iw3.iw3.model.business.interfaces.IProductoBusiness;
+import project.iw3.iw3.model.enums.EstadoOrden;
 import project.iw3.iw3.model.persistence.OrdenRepository;
+import project.iw3.iw3.util.GeneradorDePasswordActivacionPaso2;
 import project.iw3.iw3.util.JsonUtiles;
 import project.iw3.iw3.model.OrdenJsonDeserializer;
 
@@ -142,6 +144,63 @@ public class OrdenBusiness implements IOrdenBusiness {
         return add(orden);
 		
 		
+	}
+
+	
+	//PUNTO 2
+	@Override
+	public Orden registrarPesoInicial(String patente, float tara)
+			throws BusinessException, NotFoundException, FoundException {
+		
+		Optional<Orden> ordenEncontrada;
+		
+		try {
+			ordenEncontrada = ordenRepository.findByCamion_PatenteAndEstadoOrden(patente, EstadoOrden.PENDIENTE_PESAJE_INICIAL);
+		} catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
+        }
+		if (ordenEncontrada.isEmpty()) {
+            throw NotFoundException.builder().message("No hay una orden para cargar con el camion con patente " + patente).build();
+        }
+		
+		// ahora vamos con la contrasenia
+		int password = Integer.parseInt(GeneradorDePasswordActivacionPaso2.generarPassword());
+		
+		ordenEncontrada.get().setPassword(password);
+		ordenEncontrada.get().setTara(tara);
+		ordenEncontrada.get().setEstadoOrden(EstadoOrden.CON_PESAJE_INICIAL);
+		this.update(ordenEncontrada.get());
+		return ordenEncontrada.get();
+		
+		
+		
+
+	}
+
+	//PUNTO4
+	@Override
+	public Orden cerrarOrden(Long orderId) throws BusinessException, NotFoundException, FoundException {
+		
+		Optional<Orden> ordenEncontrada;
+		
+		try {
+			ordenEncontrada = ordenRepository.findById(orderId);
+		}catch(Exception e) {
+			log.error(e.getMessage(), e);
+            throw new BusinessException("Error al encontrar la orden por ID", e);
+		} if (ordenEncontrada.isEmpty()) {
+            throw new NotFoundException("No se ha encontrado la orden");
+        }
+		
+		if(ordenEncontrada.get().getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+			throw new BusinessException("Error al cambiar el estado de orden. Es necesario que se encuentre en CON_PESAJE_INICIAL");
+		}
+		
+		ordenEncontrada.get().setEstadoOrden(EstadoOrden.CERRADA_PARA_CARGA);
+		ordenEncontrada.get().setPassword(null); // le sacamos la contrasenia.
+		this.update(ordenEncontrada.get());
+		return ordenEncontrada.get();
 	}
     
 }
