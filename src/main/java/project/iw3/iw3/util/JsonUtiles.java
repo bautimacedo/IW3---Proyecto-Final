@@ -287,15 +287,8 @@ public final class JsonUtiles {
         throw new BusinessException("Error procesando chofer: " + e.getMessage(), e);
     }
 }
-
 	  
-	  //Problema SOLUCIONADO
-	  // getCamion devolvia null si la entidad no existia, al recibir una orden nueva con camion nuevo.
-	  // Al guardar una orden con camion=null, tiraba error de integridad.
-	  // Ahora getCamion hace loadOrCreate, creando el camion si no existe.
-
-
-	  public static Camion getCamion(
+	   public static Camion getCamion(
         JsonNode root,
         String[] attrs, // compatibilidad con llamadas antiguas
         ICamionBusiness camionBusiness,
@@ -337,46 +330,6 @@ public final class JsonUtiles {
     } catch (Exception e) {
         log.error("Error inesperado procesando camión: {}", e.getMessage(), e);
         throw new BusinessException("Error procesando camión: " + e.getMessage(), e);
-    }
-}
-
-
-
-
-
-/** util local para elegir el primer string no nulo/ni blanco */
-
-
-	  
-	  public static Cliente getCliente(JsonNode root, String[] attrs, IClienteBusiness clienteBusiness) throws BusinessException {
-    // 1) Buscar el nodo de cliente (por ejemplo "customer" o similar)
-    JsonNode clienteNode = getJsonNode(root, ConstantesJson.CLIENTE_NODE_ATTRIBUTES);
-    if (clienteNode == null || clienteNode.isEmpty()) {
-        log.error("JSON sin nodo de cliente valido");
-        throw new BusinessException("No se encontro el nodo de cliente en el JSON");
-    }
-
-    // 2) Extraer el nombre de empresa usando las posibles claves
-    String nombreEmpresa = firstNonBlank(
-        getString(clienteNode, ConstantesJson.CLIENTE_NOMBRE_ATTRIBUTES, null),
-        getString(clienteNode, attrs, null)
-    );
-
-    if (nombreEmpresa == null) {
-        log.error("Cliente sin nombreEmpresa");
-        throw new BusinessException("Cliente sin nombreEmpresa en JSON");
-    }
-
-    // 3) Extraer el email si esta presente
-    String email = getString(clienteNode, new String[]{"email", "correo", "contact"}, null);
-
-    try {
-        // 4) Crear o cargar el cliente existente
-        Cliente cliente = clienteBusiness.loadOrCreate(nombreEmpresa, email);
-        return cliente;
-    } catch (Exception e) {
-        log.error("Error procesando cliente {}: {}", nombreEmpresa, e.getMessage());
-        throw new BusinessException("Error procesando cliente: " + e.getMessage(), e);
     }
 }
 
@@ -425,6 +378,37 @@ public static String firstNonBlank(String... values) {
     } catch (Exception e) {
         log.error("Error procesando producto {}: {}", nombre, e.getMessage());
         throw new BusinessException("Error procesando producto: " + e.getMessage(), e);
+    }
+}
+public static Cliente getCliente(JsonNode root, String[] attrs, IClienteBusiness clienteBusiness) throws BusinessException {
+    // 1) Buscar el nodo de cliente (por ejemplo "customer" o similar)
+    JsonNode clienteNode = getJsonNode(root, ConstantesJson.CLIENTE_NODE_ATTRIBUTES);
+    if (clienteNode == null || clienteNode.isEmpty()) {
+        log.error("JSON sin nodo de cliente valido");
+        throw new BusinessException("No se encontro el nodo de cliente en el JSON");
+    }
+
+    // 2) Extraer el nombre de empresa usando las posibles claves
+    String nombreEmpresa = firstNonBlank(
+        getString(clienteNode, ConstantesJson.CLIENTE_NOMBRE_ATTRIBUTES, null),
+        getString(clienteNode, attrs, null)
+    );
+
+    if (nombreEmpresa == null) {
+        log.error("Cliente sin nombreEmpresa");
+        throw new BusinessException("Cliente sin nombreEmpresa en JSON");
+    }
+
+    // 3) Extraer el email si esta presente
+    String email = getString(clienteNode, new String[]{"email", "correo", "contact"}, null);
+
+    try {
+        // 4) Crear o cargar el cliente existente
+        Cliente cliente = clienteBusiness.loadOrCreate(nombreEmpresa, email);
+        return cliente;
+    } catch (Exception e) {
+        log.error("Error procesando cliente {}: {}", nombreEmpresa, e.getMessage());
+        throw new BusinessException("Error procesando cliente: " + e.getMessage(), e);
     }
 }
 

@@ -20,7 +20,9 @@ import project.iw3.iw3.model.business.interfaces.ICisternaBusiness;
 import project.iw3.iw3.model.business.interfaces.IClienteBusiness;
 import project.iw3.iw3.model.business.interfaces.IOrdenBusiness;
 import project.iw3.iw3.model.business.interfaces.IProductoBusiness;
+import project.iw3.iw3.model.enums.EstadoOrden;
 import project.iw3.iw3.model.persistence.OrdenRepository;
+import project.iw3.iw3.util.GeneradorDePasswordActivacionPaso2;
 import project.iw3.iw3.util.JsonUtiles;
 import project.iw3.iw3.model.OrdenJsonDeserializer;
 
@@ -90,7 +92,10 @@ public class OrdenBusiness implements IOrdenBusiness {
 		}catch(NotFoundException e) {
 			
 		}
-		
+		if (orden.getPesoFinal() == null) {
+    	orden.setPesoFinal(0.0);
+		}
+
 		try {
 			return ordenRepository.save(orden);
 		}catch(Exception e) {
@@ -143,5 +148,115 @@ public class OrdenBusiness implements IOrdenBusiness {
 		
 		
 	}
+
+	
+	//PUNTO 2
+	@Override
+	public Orden registrarPesoInicial(String patente, float tara)
+			throws BusinessException, NotFoundException, FoundException {
+		
+		Optional<Orden> ordenEncontrada;
+		
+		try {
+			ordenEncontrada = ordenRepository.findByCamion_PatenteAndEstadoOrden(patente, EstadoOrden.PENDIENTE_PESAJE_INICIAL);
+		} catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
+        }
+		if (ordenEncontrada.isEmpty()) {
+            throw NotFoundException.builder().message("No hay una orden para cargar con el camion con patente " + patente).build();
+        }
+		
+		// ahora vamos con la contrasenia
+		int password = Integer.parseInt(GeneradorDePasswordActivacionPaso2.generarPassword());
+		
+		ordenEncontrada.get().setPassword(password);
+		ordenEncontrada.get().setTara(tara);
+		ordenEncontrada.get().setEstadoOrden(EstadoOrden.CON_PESAJE_INICIAL);
+		this.update(ordenEncontrada.get());
+		return ordenEncontrada.get();
+		
+		
+		
+
+	}
+
+	//PUNTO4
+	@Override
+	public Orden cerrarOrden(Long orderId) throws BusinessException, NotFoundException, FoundException {
+		
+		Optional<Orden> ordenEncontrada;
+		
+		try {
+			ordenEncontrada = ordenRepository.findById(orderId);
+		}catch(Exception e) {
+			log.error(e.getMessage(), e);
+            throw new BusinessException("Error al encontrar la orden por ID", e);
+		} if (ordenEncontrada.isEmpty()) {
+            throw new NotFoundException("No se ha encontrado la orden");
+        }
+		
+		if(ordenEncontrada.get().getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+			throw new BusinessException("Error al cambiar el estado de orden. Es necesario que se encuentre en CON_PESAJE_INICIAL");
+		}
+		
+		ordenEncontrada.get().setEstadoOrden(EstadoOrden.CERRADA_PARA_CARGA);
+		ordenEncontrada.get().setPassword(null); // le sacamos la contrasenia.
+		this.update(ordenEncontrada.get());
+		return ordenEncontrada.get();
+	}
     
+	// PUNTO 3)
+	@Override
+	public Orden recibirDatosCarga(Long orderId, Double masa, Double densidad, Double temperatura, Double caudal)
+			throws BusinessException, NotFoundException {
+
+		Optional<Orden> ordenEncontrada;
+
+		try {
+			ordenEncontrada = ordenRepository.findById(orderId);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().message("Error al recuperar la orden").ex(e).build();
+		}
+
+		if (ordenEncontrada.isEmpty()) {
+			throw NotFoundException.builder().message("No se encontro la orden con id=" + orderId).build();
+		}
+
+		Orden orden = ordenEncontrada.get();
+
+		// el estado debe esatar en PESAJE INICIAL
+		if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+			throw BusinessException.builder()
+					.message("La orden no esta habilitada para recibir datos de carga (estado invalido)")
+					.build();
+		}
+
+		// validaciones simples de datos
+		if (masa == null || densidad == null || temperatura == null || caudal == null) {
+			throw BusinessException.builder().message("Datos incompletos en la carga").build();
+		}
+		if (caudal < 0) {
+			throw BusinessException.builder().message("Caudal invalido (menor a 0)").build();
+		}
+		if (orden.getUltimaMasaAcumulada() != null && masa < orden.getUltimaMasaAcumulada()) {
+			throw BusinessException.builder().message("Masa acumulada retrocedio, dato invalido").build();
+		}
+
+		// actualizamos los ultimos valores
+		orden.setUltimaFechaInformacion(new java.util.Date());
+		orden.setUltimaMasaAcumulada(masa);
+		orden.setUltimaDensidad(densidad);
+		orden.setUltimaTemperatura(temperatura);
+		orden.setUltimaFlowRate(caudal);
+
+		try {
+			return ordenRepository.save(orden);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().message("Error al actualizar datos de carga").ex(e).build();
+		}
+	}
+
 }
