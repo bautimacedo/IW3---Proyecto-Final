@@ -4,8 +4,11 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import io.micrometer.common.lang.Nullable;
+import jakarta.transaction.Transactional;
 import project.iw3.iw3.model.Cliente;
 import project.iw3.iw3.model.Producto;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
@@ -132,26 +135,40 @@ public class ProductoBusiness implements IProductoBusiness {
     }
 
 	@Override
-	public Producto loadOrCreate(Producto producto) throws BusinessException, NotFoundException {
-		if (producto == null) {
-			  throw BusinessException.builder().message("Producto no puede ser null").build();
-		  }
-		
-		Producto entity = null;
-		
-		try {
-			  
-			  entity = this.load(producto.getNombre());
-			  
-		  }catch(NotFoundException e) {
-			  try {
-				 entity = this.add(producto); 
-			  }catch(FoundException ignored) {
-				  //no va a pasar
-			  }
-		  }
-		  
-		  return entity;
-	}
+@Transactional
+public Producto loadOrCreate(String nombre, @Nullable String descripcion) throws BusinessException {
+    // 1) Validacion basica
+    if (nombre == null || nombre.isBlank()) {
+        throw new BusinessException("Producto: 'nombre' es obligatorio.");
+    }
+
+    final String nom = nombre.trim().toUpperCase();
+
+    // 2) Buscar primero
+    Optional<Producto> found = productDAO.findByNombre(nom);
+    if (found.isPresent()) {
+        log.debug("Producto existente recuperado: {}", found.get().getNombre());
+        return found.get();
+    }
+
+    // 3) Crear si no existe
+    try {
+        Producto nuevo = new Producto();
+        nuevo.setNombre(nom);
+        nuevo.setDescripcion(descripcion); // puede ser null
+        Producto saved = productDAO.save(nuevo);
+        log.info("Producto creado: nombre={}", saved.getNombre());
+        return saved;
+    } catch (DataIntegrityViolationException e) {
+        // 4) Si hubo colision de insercion, reintentamos leer
+        log.warn("Colision creando producto {}, releyendo: {}", nom, e.getMessage());
+        return productDAO.findByNombre(nom)
+                .orElseThrow(() -> new BusinessException("No se pudo crear ni recuperar el producto con nombre=" + nom));
+    } catch (Exception e) {
+        log.error("Error creando producto {}: {}", nom, e.getMessage(), e);
+        throw new BusinessException("Error creando producto: " + e.getMessage(), e);
+    }
+}
+
 
 }

@@ -2,6 +2,7 @@ package project.iw3.iw3.model.business.interfaces;
 
 import java.util.List;
 
+import io.micrometer.common.lang.Nullable;
 import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.Producto;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
@@ -22,6 +23,6 @@ public interface IProductoBusiness {
     
     public void delete(long id) throws NotFoundException, BusinessException;
     
-    public Producto loadOrCreate(Producto producto) throws BusinessException, NotFoundException;
+    public Producto loadOrCreate(String nombre, @Nullable String descripcion) throws BusinessException;
 
 }

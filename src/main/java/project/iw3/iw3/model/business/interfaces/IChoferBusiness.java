@@ -2,6 +2,7 @@ package project.iw3.iw3.model.business.interfaces;
 
 import java.util.List;
 
+import io.micrometer.common.lang.Nullable;
 import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
@@ -21,5 +22,5 @@ public interface IChoferBusiness {
 
     public void delete(long id) throws NotFoundException, BusinessException;
     
-    public Chofer loadOrCreate(Chofer chofer) throws BusinessException, NotFoundException;
+    public Chofer loadOrCreate(String dni, @Nullable String nombre, @Nullable String apellido) throws BusinessException;
 }

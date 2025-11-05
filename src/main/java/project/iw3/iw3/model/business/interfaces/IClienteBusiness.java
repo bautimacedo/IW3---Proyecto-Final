@@ -19,5 +19,5 @@ public interface IClienteBusiness {
 
     public void delete(long id) throws NotFoundException, BusinessException;
     
-    public Cliente loadOrCreate(Cliente cliente) throws BusinessException, NotFoundException;
+    public Cliente loadOrCreate(String nombreEmpresa, @Nullable String email) throws BusinessException;
 }

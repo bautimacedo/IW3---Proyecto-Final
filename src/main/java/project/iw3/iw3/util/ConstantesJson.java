@@ -21,7 +21,7 @@ public class ConstantesJson {
  // Constantes para el nodo Truck
     public static final String[] CAMION_NODE_ATTRIBUTES = {"truck", "Truck", "vehicle", "Vehicle"};
     public static final String[] CAMION_ID_ATTRIBUTES = {"id", "id_truck", "code", "truck_code"};
-    public static final String[] CAMION_PATENTE_ATTRIBUTES = {"truck_plate", "truck_plate_number", "license_plate", "truck_license_plate", "licence_plate", "truck_licence_plate"};
+    public static final String[] CAMION_PATENTE_ATTRIBUTES = {"patente","truck_plate", "truck_plate_number", "license_plate", "truck_license_plate", "licence_plate", "truck_licence_plate"};
     public static final String[] CAMION_DESCRIPCION_ATTRIBUTES = {"description", "truck_description"};
     
  // Constantes para el nodo Tanker

@@ -26,10 +26,11 @@ public class Camion {
     @Column(length = 100, unique = true, nullable = false)
     private String patente;
 
+    @Column(name = "descripcion", nullable = true, length = 100) // permitir NULL
     private String descripcion;
 
     //Un camion puede tener varias cisternasz
     @JsonManagedReference
-    @OneToMany(mappedBy = "camion")
+    @OneToMany(mappedBy = "camion", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Cisterna> cisterna = new HashSet<>();
 }

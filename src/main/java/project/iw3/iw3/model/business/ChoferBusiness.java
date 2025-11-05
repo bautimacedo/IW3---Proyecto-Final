@@ -4,8 +4,11 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import io.micrometer.common.lang.Nullable;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
@@ -46,43 +49,43 @@ public class ChoferBusiness implements IChoferBusiness {
     }
     
     @Override
-	public Chofer loadOrCreate(Chofer chofer) throws BusinessException{
-		if (chofer == null) {
-	        throw BusinessException.builder().message("Chofer no puede ser null").build();
-	    }
-		
-		final String dni = chofer.getDni() == null ? null : chofer.getDni().trim();
-		
-		if (dni == null || dni.isBlank()) {
-	        throw BusinessException.builder()
-	                .message("Se requiere documento para loadOrCreate")
-	                .build();
-	    }
-		
-		Chofer entity = null;
-		
-		//intentamos cargar x dni
-		try {
-			entity = this.add(chofer); 
-			
-		// si existe el chofer, entonces lo busca.
-	    }catch(FoundException e){
-	    	
-	    	try {
-	    		entity = this.load(dni);
-	    	} catch(NotFoundException nf) {
-	    		throw BusinessException.builder()
-                .message("Estado inconsistente: Found por DNI pero luego no se pudo cargar: " + dni)
-                .ex(nf)
-                .build();
-	    	}
-	    	
-	    } catch (BusinessException be) {
-	        throw be; // re-propago
-	    }
-		
-		return entity;
-	}
+@Transactional
+public Chofer loadOrCreate(String dni, @Nullable String nombre, @Nullable String apellido) throws BusinessException {
+    // 1) Validacion basica
+    if (dni == null || dni.isBlank()) {
+        throw new BusinessException("Chofer: 'dni' es obligatorio.");
+    }
+
+    final String doc = dni.trim();
+
+    // 2) Intentamos buscar el chofer por dni
+    Optional<Chofer> found = choferDAO.findByDni(doc);
+    if (found.isPresent()) {
+        log.debug("Chofer existente recuperado: {}", found.get().getDni());
+        return found.get();
+    }
+
+    // 3) Si no existe, creamos uno nuevo
+    try {
+        Chofer nuevo = new Chofer();
+        nuevo.setDni(doc);
+        nuevo.setNombre(nombre != null ? nombre.trim() : "SIN_NOMBRE");
+        nuevo.setApellido(apellido != null ? apellido.trim() : "SIN_APELLIDO");
+
+        Chofer saved = choferDAO.save(nuevo);
+        log.info("Chofer creado: dni={}", saved.getDni());
+        return saved;
+    } catch (DataIntegrityViolationException e) {
+        // 4) Si hubo colision o insercion concurrente, reintentamos leer
+        log.warn("Colision creando chofer {}, releyendo: {}", doc, e.getMessage());
+        return choferDAO.findByDni(doc)
+                .orElseThrow(() -> new BusinessException("No se pudo crear ni recuperar el chofer con dni=" + doc));
+    } catch (Exception e) {
+        log.error("Error creando chofer {}: {}", doc, e.getMessage(), e);
+        throw new BusinessException("Error creando chofer: " + e.getMessage(), e);
+    }
+}
+
 
     @Override
     public Chofer load(long id) throws NotFoundException, BusinessException {

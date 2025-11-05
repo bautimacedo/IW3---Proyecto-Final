@@ -1,10 +1,14 @@
 package project.iw3.iw3.model.business;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import io.micrometer.common.lang.Nullable;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import project.iw3.iw3.model.Cliente;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
@@ -81,26 +85,39 @@ public class ClienteBusiness implements IClienteBusiness {
     }
 
 	  @Override
-	  public Cliente loadOrCreate(Cliente cliente) throws BusinessException, NotFoundException {
-		  if (cliente == null) {
-			  throw BusinessException.builder().message("Cliente no puede ser null").build();
-		  }
-		  
-		  Cliente entity = null;
-		  
-		  try {
-			  
-			  entity = this.load(cliente.getNombreEmpresa());
-			  
-		  }catch(NotFoundException e) {
-			  try {
-				 entity = this.add(cliente); 
-			  }catch(FoundException ignored) {
-				  //no va a pasar
-			  }
-		  }
-		  
-		  return entity;
-		
-	  }
+@Transactional
+public Cliente loadOrCreate(String nombreEmpresa, @Nullable String email) throws BusinessException {
+    // 1) Validacion basica
+    if (nombreEmpresa == null || nombreEmpresa.isBlank()) {
+        throw new BusinessException("Cliente: 'nombreEmpresa' es obligatorio.");
+    }
+
+    final String nom = nombreEmpresa.trim().toUpperCase();
+
+    // 2) Buscar primero
+    Optional<Cliente> found = clienteRepository.findByNombreEmpresa(nom);
+    if (found.isPresent()) {
+        log.debug("Cliente existente recuperado: {}", found.get().getNombreEmpresa());
+        return found.get();
+    }
+
+    // 3) Crear si no existe
+    try {
+        Cliente nuevo = new Cliente();
+        nuevo.setNombreEmpresa(nom);
+        nuevo.setEmail(email); // puede ser null
+        Cliente saved = clienteRepository.save(nuevo);
+        log.info("Cliente creado: {}", saved.getNombreEmpresa());
+        return saved;
+    } catch (DataIntegrityViolationException e) {
+        // 4) Si otro hilo lo creo mientras tanto, reintentamos leer
+        log.warn("Colision creando cliente {}, releyendo: {}", nom, e.getMessage());
+        return clienteRepository.findByNombreEmpresa(nom)
+                .orElseThrow(() -> new BusinessException("No se pudo crear ni recuperar el cliente con nombreEmpresa=" + nom));
+    } catch (Exception e) {
+        log.error("Error creando cliente {}: {}", nom, e.getMessage(), e);
+        throw new BusinessException("Error creando cliente: " + e.getMessage(), e);
+    }
+}
+
 }

@@ -20,4 +20,5 @@ public interface ICisternaBusiness {
     Cisterna update(Cisterna cisterna) throws FoundException, NotFoundException, BusinessException;
 
     void delete(long id) throws NotFoundException, BusinessException;
+
 }

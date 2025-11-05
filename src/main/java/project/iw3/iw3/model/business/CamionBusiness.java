@@ -1,8 +1,15 @@
 package project.iw3.iw3.model.business;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import io.micrometer.common.lang.Nullable;
+import jakarta.transaction.Transactional;
 import project.iw3.iw3.model.Camion;
 import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.Cisterna;
@@ -99,41 +106,42 @@ public class CamionBusiness implements ICamionBusiness {
         }
     }
 
-	  @Override
-	  public Camion loadOrCreate(Camion camion) throws BusinessException, NotFoundException {
-		 
-		  if (camion == null) {
-			  throw BusinessException.builder().message("Camion no puede ser null").build();
-		  }
-		  
-		  Camion entity = null;
-		  
-		  try {
-			  
-			  entity = this.load(camion.getPatente());
-			  
-		  } catch(NotFoundException ignore) {
-			  // si no lo encontramos lo creamos
-			  try {
-				  entity =  this.add(camion);
-			  } catch (FoundException ignored) {
-				  // esto es imposible que pase
-			  }
-		  }
-		  
-		  return entity;
-		  
-		  
-		  
-		  // puede pasar que el camion ya existia, pero viene con distintas cisternas. en ese caso, tenemos que agregarlas
-		  /*
-		  for (Cisterna cisterna : camion.getCisterna()) { // aca obtenemos del camion que viene toda la lista de cisternas y las recorremos una por una con cisterna
-			  try {
-				  cisterna.setCamion(camion.get());
-			  }
-		  }
-		  */
-		  
-	  }
+	 @Override
+@Transactional
+public Camion loadOrCreate(String patente, @Nullable String descripcion) throws BusinessException {
+    //1. Validar datos básicos
+    if (patente == null || patente.isBlank()) {
+        throw new BusinessException("Camión: 'patente' es obligatoria.");
+    }
+
+    final String pat = patente.trim().toUpperCase();
+
+    // 2. ntentar buscar el camion existente
+    Optional<Camion> found = camionRepository.findByPatente(pat);
+    if (found.isPresent()) {
+        log.debug("Camion existente recuperado: {}", found.get().getPatente());
+        return found.get();
+    }
+
+    // 3. Si no existe, creamos uno nuevo (sin procesar cisternas)
+    try {
+        Camion nuevo = new Camion();
+        nuevo.setPatente(pat);
+        nuevo.setDescripcion(descripcion); // puede ser null
+        Camion saved = camionRepository.save(nuevo);
+        log.info("Camion creado: patente={}", saved.getPatente());
+        return saved;
+    } catch (DataIntegrityViolationException e) {
+        // 4️⃣ Si otro hilo lo creó mientras tanto, reintentar leer
+        log.warn("Colision creando camión {}, releyendo: {}", pat, e.getMessage());
+        return camionRepository.findByPatente(pat)
+                .orElseThrow(() -> new BusinessException("No se pudo crear ni recuperar el camion con patente=" + pat));
+    } catch (Exception e) {
+        log.error("Error creando camión {}: {}", pat, e.getMessage(), e);
+        throw new BusinessException("Error creando camion: " + e.getMessage(), e);
+    }
+}
+
+
    
 }    

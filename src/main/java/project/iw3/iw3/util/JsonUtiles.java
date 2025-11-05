@@ -10,6 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import project.iw3.iw3.model.Camion;
 import project.iw3.iw3.model.Chofer;
@@ -28,6 +31,10 @@ import java.util.Date;
 
 
 public final class JsonUtiles {
+	private static final Logger log = LoggerFactory.getLogger(JsonUtiles.class);
+
+
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static ObjectMapper getObjectMapper(Class clazz, StdSerializer ser, String dateFormat) {
 		ObjectMapper mapper = new ObjectMapper();
@@ -248,108 +255,179 @@ public final class JsonUtiles {
 	     * */
 	    
 	    //entonces quedaria driverNode = {"document":"40123456","name":"Juan","lastname":"Pérez"}.
-	  public static Chofer getChofer(JsonNode node, String[] attrs, IChoferBusiness choferBusiness) {
-		  JsonNode choferNode = getJsonNode(node, ConstantesJson.CHOFER_NODE_ATTRIBUTES); 
-		  //buscamos el dni
-		  if (choferNode == null) return null;
-		  
-		  String dniChofer = null;
-			  
-		  for (String attr : attrs) { //aca busca DRIVER_DNI_ATTRIBUTES
-			  if (choferNode.get(attr) != null) {
-				  dniChofer = choferNode.get(attr).asText();
-	              break;
-	              }
-	      } 
-		  
-		  if (dniChofer == null) return null;
-		  
-		  try{
-			  
-			  Chofer dto = BuildEntityUtiles.choferConstructor(choferNode);
-			  return choferBusiness.loadOrCreate(dto); //aca tenemos que crear al chofer
-			  
-		  } catch(Exception e){
-			  
-			  return null;
-			  
-		  } 
-	  }
+	  public static Chofer getChofer(JsonNode root, String[] attrs, IChoferBusiness choferBusiness) throws BusinessException {
+    // 1) Buscar el nodo correspondiente al chofer
+    JsonNode choferNode = getJsonNode(root, ConstantesJson.CHOFER_NODE_ATTRIBUTES);
+    if (choferNode == null || choferNode.isEmpty()) {
+        log.error("JSON sin nodo de chofer valido");
+        throw new BusinessException("No se encontro el nodo de chofer en el JSON");
+    }
+
+    // 2) Extraer DNI del chofer usando las posibles claves configuradas
+    String dni = firstNonBlank(
+        getString(choferNode, ConstantesJson.DRIVER_DNI_ATTRIBUTES, null),
+        getString(choferNode, attrs, null)
+    );
+
+    if (dni == null) {
+        log.error("Chofer sin dni");
+        throw new BusinessException("Chofer sin dni en JSON");
+    }
+
+    // 3) Extraer nombre y apellido si vienen en el json
+    String nombre = getString(choferNode, new String[]{"nombre", "name", "first_name"}, null);
+    String apellido = getString(choferNode, new String[]{"apellido", "last_name", "surname"}, null);
+
+    try {
+        // 4) Crear o recuperar el chofer existente
+        Chofer chofer = choferBusiness.loadOrCreate(dni, nombre, apellido);
+        return chofer;
+    } catch (Exception e) {
+        log.error("Error procesando chofer {}: {}", dni, e.getMessage());
+        throw new BusinessException("Error procesando chofer: " + e.getMessage(), e);
+    }
+}
+
 	  
-	  public static Camion getCamion(JsonNode node, String[] attrs, ICamionBusiness camionBusiness, ICisternaBusiness cisternaBusiness) {
-		  JsonNode camionNode = getJsonNode(node, ConstantesJson.CAMION_NODE_ATTRIBUTES); 
-		  if(camionNode == null) return null;
-		  
-		  String patenteCamion = getString(camionNode, attrs, null);  // Obtener placa del camión desde los atributos
-		  
-		  if(patenteCamion == null) return null;
-		  
-		  JsonNode cisternaNode = camionNode.get("tanks");
-		  
-		  try {
-			  
-			  Camion dto = BuildEntityUtiles.camionConstructor(camionNode, cisternaNode);
-			  return camionBusiness.loadOrCreate(dto); //creamos o traemos el camion ATENCION EN ESTE CASO EL CAMION SIEMPRE TIENE LAS MISMAS CISTERNAS
-			  
-		  } catch (Exception e) {
-			  
-			  return null;
-		  }
-		  
-		  
-	  }
+	  //Problema SOLUCIONADO
+	  // getCamion devolvia null si la entidad no existia, al recibir una orden nueva con camion nuevo.
+	  // Al guardar una orden con camion=null, tiraba error de integridad.
+	  // Ahora getCamion hace loadOrCreate, creando el camion si no existe.
+
+
+	  public static Camion getCamion(
+        JsonNode root,
+        String[] attrs, // compatibilidad con llamadas antiguas
+        ICamionBusiness camionBusiness,
+        ICisternaBusiness cisternaBusiness
+) throws BusinessException {
+
+    JsonNode camionNode = getJsonNode(root, ConstantesJson.CAMION_NODE_ATTRIBUTES);
+    if (camionNode == null || camionNode.isNull()) {
+        log.error("JSON sin camion ({}).", (Object) ConstantesJson.CAMION_NODE_ATTRIBUTES);
+        throw new BusinessException("Falta el nodo de camión en el JSON.");
+    }
+
+    // ✅ usamos directamente las claves definidas en ConstantesJson
+    String patente = getString(camionNode, ConstantesJson.CAMION_PATENTE_ATTRIBUTES, null);
+
+    if (patente == null) {
+        log.error("Caminn sin patente en el JSON. Claves aceptadas: {}", (Object) ConstantesJson.CAMION_PATENTE_ATTRIBUTES);
+        throw new BusinessException("Camion: 'patente' es obligatoria.");
+    }
+
+    // descripción opcional
+    String descripcion = getString(camionNode, ConstantesJson.CAMION_DESCRIPCION_ATTRIBUTES, null);
+
+    // cisternas (solo se loguean)
+    if (camionNode.hasNonNull("tanks")) {
+        JsonNode tanks = camionNode.get("tanks");
+        log.debug("Se recibieron {} cisternas en el JSON de camión (se ignoran en esta etapa).",
+                tanks.isArray() ? tanks.size() : 1);
+    }
+
+    // lookup / creación
+    try {
+        Camion camion = camionBusiness.loadOrCreate(patente, descripcion);
+        log.info("Camión listo (loadOrCreate): patente={}", camion.getPatente());
+        return camion;
+    } catch (BusinessException be) {
+        log.error("Error en loadOrCreate(camión): {}", be.getMessage(), be);
+        throw be;
+    } catch (Exception e) {
+        log.error("Error inesperado procesando camión: {}", e.getMessage(), e);
+        throw new BusinessException("Error procesando camión: " + e.getMessage(), e);
+    }
+}
+
+
+
+
+
+/** util local para elegir el primer string no nulo/ni blanco */
+
+
 	  
-	  public static Cliente getCliente(JsonNode node, String[] attrs, IClienteBusiness clienteBusiness) {
-		  JsonNode clienteNode = getJsonNode(node, ConstantesJson.CLIENTE_NODE_ATTRIBUTES); //buscamos a cliente en el json
-		  
-		  if(clienteNode == null) return null;
-		  
-		  String nombreCliente = null;
-		  
-		  //recorremos todos los campos hasta encontrar CLIENTE_NOMBRE_ATTRIBUTES
-		  for (String attr : attrs) {
-			    if (clienteNode.get(attr) != null) {
-			    	nombreCliente = clienteNode.get(attr).asText();
-			        break;
-			    }
-		  }
-		  //si encontramos el nombre, construimos el cliente.
-		  if (nombreCliente == null) return null;
-		  try {
-			  Cliente dto = BuildEntityUtiles.clienteConstructor(clienteNode);
-			  return clienteBusiness.loadOrCreate(dto);
-		  } catch(Exception e) {
-			  return null;
-		  } 
-	  }
+	  public static Cliente getCliente(JsonNode root, String[] attrs, IClienteBusiness clienteBusiness) throws BusinessException {
+    // 1) Buscar el nodo de cliente (por ejemplo "customer" o similar)
+    JsonNode clienteNode = getJsonNode(root, ConstantesJson.CLIENTE_NODE_ATTRIBUTES);
+    if (clienteNode == null || clienteNode.isEmpty()) {
+        log.error("JSON sin nodo de cliente valido");
+        throw new BusinessException("No se encontro el nodo de cliente en el JSON");
+    }
+
+    // 2) Extraer el nombre de empresa usando las posibles claves
+    String nombreEmpresa = firstNonBlank(
+        getString(clienteNode, ConstantesJson.CLIENTE_NOMBRE_ATTRIBUTES, null),
+        getString(clienteNode, attrs, null)
+    );
+
+    if (nombreEmpresa == null) {
+        log.error("Cliente sin nombreEmpresa");
+        throw new BusinessException("Cliente sin nombreEmpresa en JSON");
+    }
+
+    // 3) Extraer el email si esta presente
+    String email = getString(clienteNode, new String[]{"email", "correo", "contact"}, null);
+
+    try {
+        // 4) Crear o cargar el cliente existente
+        Cliente cliente = clienteBusiness.loadOrCreate(nombreEmpresa, email);
+        return cliente;
+    } catch (Exception e) {
+        log.error("Error procesando cliente {}: {}", nombreEmpresa, e.getMessage());
+        throw new BusinessException("Error procesando cliente: " + e.getMessage(), e);
+    }
+}
+
 	  
 	  
-	  
-	  public static Producto getProducto(JsonNode node, String[] attrs, IProductoBusiness productoBusiness) {
-		  JsonNode productoNode = getJsonNode(node, ConstantesJson.PRODUCTO_NODE_ATTRIBUTES); //buscamos a cliente en el json
-		  
-		  if(productoNode == null) return null;
-		  
-		  String nombreProducto = null;
-		  
-		  for (String attr : attrs) {
-			    if (productoNode.get(attr) != null) {
-			    	nombreProducto = productoNode.get(attr).asText();
-			        break;
-			    }
-		  }
-		  
-		  if (nombreProducto == null) return null;
-		  
-		  try {
-			  Producto dto = BuildEntityUtiles.productoConstructor(productoNode);
-			  return productoBusiness.loadOrCreate(dto);
-			  
-		  } catch(Exception e) {
-			  return null;
-		  }
-		  
-	  }
+	  /**
+ * Devuelve el primer String no nulo ni vacio de los pasados por parametro.
+ * Si todos son nulos o vacios, devuelve null.
+ */
+public static String firstNonBlank(String... values) {
+    if (values == null) return null;
+    for (String v : values) {
+        if (v != null && !v.trim().isEmpty()) {
+            return v.trim();
+        }
+    }
+    return null;
+}
+
+	  public static Producto getProducto(JsonNode root, String[] attrs, IProductoBusiness productoBusiness) throws BusinessException {
+    // 1) Buscar el nodo del producto, por ejemplo "product" o similar
+    JsonNode productoNode = getJsonNode(root, ConstantesJson.PRODUCTO_NODE_ATTRIBUTES);
+    if (productoNode == null || productoNode.isEmpty()) {
+        log.error("JSON sin nodo de producto valido");
+        throw new BusinessException("No se encontro el nodo de producto en el JSON");
+    }
+
+    // 2) Extraer el nombre usando las posibles claves configuradas en ConstantesJson
+    String nombre = firstNonBlank(
+        getString(productoNode, ConstantesJson.PRODUCTO_NOMBRE_ATTRIBUTES, null),
+        getString(productoNode, attrs, null)
+    );
+
+    if (nombre == null) {
+        log.error("Producto sin nombre");
+        throw new BusinessException("Producto sin nombre en JSON");
+    }
+
+    // 3) Extraer descripcion si esta
+    String descripcion = getString(productoNode, new String[]{"descripcion", "description", "detail"}, null);
+
+    try {
+        // 4) Crear o cargar el producto (sin lanzar excepcion si ya existe)
+        Producto producto = productoBusiness.loadOrCreate(nombre, descripcion);
+        return producto;
+    } catch (Exception e) {
+        log.error("Error procesando producto {}: {}", nombre, e.getMessage());
+        throw new BusinessException("Error procesando producto: " + e.getMessage(), e);
+    }
+}
+
 			  
 }
 
