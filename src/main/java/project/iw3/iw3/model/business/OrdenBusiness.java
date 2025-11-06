@@ -228,68 +228,82 @@ public class OrdenBusiness implements IOrdenBusiness {
     
 	// PUNTO 3)
 	@Override
-public Orden recibirDatosCarga(DatosCargaDTO datos)
-        throws BusinessException, NotFoundException {
+	public Orden recibirDatosCarga(DatosCargaDTO datos)
+	        throws BusinessException, NotFoundException {
+	
+	    Optional<Orden> ordenEncontrada;
+	
+	    try {
+	        ordenEncontrada = ordenRepository.findById(datos.getOrderId());
+	    } catch (Exception e) {
+	        log.error(e.getMessage(), e);
+	        throw BusinessException.builder().message("Error al recuperar la orden").ex(e).build();
+	    }
+	
+	    if (ordenEncontrada.isEmpty()) {
+	        throw NotFoundException.builder()
+	                .message("No se encontró la orden con id=" + datos.getOrderId())
+	                .build();
+	    }
+	
+	    Orden orden = ordenEncontrada.get();
+	
+	    // Verificar estado
+	    if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+	        throw BusinessException.builder()
+	                .message("La orden no está habilitada para recibir datos de carga (estado inválido)")
+	                .build();
+	    }
+	
+	    // Validaciones simples
+	    if (datos.getMasa() == null || datos.getDensidad() == null ||
+	        datos.getTemperatura() == null || datos.getCaudal() == null) {
+	        throw BusinessException.builder().message("Datos incompletos en la carga").build();
+	    }
+	
+	    if (datos.getCaudal() < 0) {
+	        throw BusinessException.builder().message("Caudal inválido (menor a 0)").build();
+	    }
+	
+	    if (orden.getUltimaMasaAcumulada() != null &&
+	        datos.getMasa() < orden.getUltimaMasaAcumulada()) {
+	        throw BusinessException.builder().message("Masa acumulada retrocedió, dato inválido").build();
+	    }
+	
+	    //  Si es el primer dato de carga, registrar fecha de inicio
+	    if (orden.getFechaInicioCarga() == null) {
+	        orden.setFechaInicioCarga(new java.util.Date());
+	        log.info("Orden {} - Fecha de inicio de carga registrada: {}", datos.getOrderId(), orden.getFechaInicioCarga());
+	    }
+	
+	    // Actualizar datos en cabecera
+	    orden.setUltimaFechaInformacion(new java.util.Date());
+	    orden.setUltimaMasaAcumulada(datos.getMasa());
+	    orden.setUltimaDensidad(datos.getDensidad());
+	    orden.setUltimaTemperatura(datos.getTemperatura());
+	    orden.setUltimaFlowRate(datos.getCaudal());
+	
+	    try {
+	        // Guardamos en la tabla de detalle
+	        DetalleCarga detalle = new DetalleCarga();
+	        detalle.setOrden(orden);
+	        detalle.setMasaAcumulada(datos.getMasa());
+	        detalle.setDensidad(datos.getDensidad());
+	        detalle.setTemperatura(datos.getTemperatura());
+	        detalle.setCaudal(datos.getCaudal());
+	        detalle.setEstampaTiempo(new java.util.Date());
 
-    Optional<Orden> ordenEncontrada;
+	        detalleCargaRepository.save(detalle); //  inserta el registro histórico
 
-    try {
-        ordenEncontrada = ordenRepository.findById(datos.getOrderId());
-    } catch (Exception e) {
-        log.error(e.getMessage(), e);
-        throw BusinessException.builder().message("Error al recuperar la orden").ex(e).build();
-    }
-
-    if (ordenEncontrada.isEmpty()) {
-        throw NotFoundException.builder()
-                .message("No se encontró la orden con id=" + datos.getOrderId())
-                .build();
-    }
-
-    Orden orden = ordenEncontrada.get();
-
-    // Verificar estado
-    if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
-        throw BusinessException.builder()
-                .message("La orden no está habilitada para recibir datos de carga (estado inválido)")
-                .build();
-    }
-
-    // Validaciones simples
-    if (datos.getMasa() == null || datos.getDensidad() == null ||
-        datos.getTemperatura() == null || datos.getCaudal() == null) {
-        throw BusinessException.builder().message("Datos incompletos en la carga").build();
-    }
-
-    if (datos.getCaudal() < 0) {
-        throw BusinessException.builder().message("Caudal inválido (menor a 0)").build();
-    }
-
-    if (orden.getUltimaMasaAcumulada() != null &&
-        datos.getMasa() < orden.getUltimaMasaAcumulada()) {
-        throw BusinessException.builder().message("Masa acumulada retrocedió, dato inválido").build();
-    }
-
-    // ✅ Si es el primer dato de carga, registrar fecha de inicio
-    if (orden.getFechaInicioCarga() == null) {
-        orden.setFechaInicioCarga(new java.util.Date());
-        log.info("Orden {} - Fecha de inicio de carga registrada: {}", datos.getOrderId(), orden.getFechaInicioCarga());
-    }
-
-    // Actualizar datos en cabecera
-    orden.setUltimaFechaInformacion(new java.util.Date());
-    orden.setUltimaMasaAcumulada(datos.getMasa());
-    orden.setUltimaDensidad(datos.getDensidad());
-    orden.setUltimaTemperatura(datos.getTemperatura());
-    orden.setUltimaFlowRate(datos.getCaudal());
-
-    try {
-        return ordenRepository.save(orden);
-    } catch (Exception e) {
-        log.error(e.getMessage(), e);
-        throw BusinessException.builder().message("Error al actualizar datos de carga").ex(e).build();
-    }
-}
+	        return ordenRepository.save(orden);
+	    } catch (Exception e) {
+	        log.error(e.getMessage(), e);
+	        throw BusinessException.builder()
+	            .message("Error al actualizar datos de carga")
+	            .ex(e).build();
+	    }
+	    
+	}
 
 
 

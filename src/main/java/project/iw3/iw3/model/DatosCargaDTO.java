@@ -1,7 +1,7 @@
 package project.iw3.iw3.model;
 
 public class DatosCargaDTO {
-    private Long orderId;
+    private Long orderId; //nuestra BD 
     private Integer password;
     private Double masa;
     private Double densidad;

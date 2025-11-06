@@ -106,22 +106,22 @@ public class OrdenRestController extends BaseRestController {
     }
 
     // PUNTO 3) - Recibir datos de carga desde JSON
-@PostMapping(value = "/datos-carga", consumes = MediaType.APPLICATION_JSON_VALUE)
-public ResponseEntity<?> receiveLoadData(@RequestBody DatosCargaDTO datos) {
-    try {
-        Orden orden = ordenBusiness.recibirDatosCarga(datos);
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.set("Order-Id", String.valueOf(orden.getId()));
-        return new ResponseEntity<>("Datos recibidos correctamente", responseHeaders, HttpStatus.OK);
-    } catch (BusinessException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-    } catch (NotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-    } catch (Exception e) {
-        log.error("Erro interno al recibir datos de carga", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
-    }
-}
+	@PostMapping(value = "/datos-carga", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> receiveLoadData(@RequestBody DatosCargaDTO datos) {
+	    try {
+	        Orden orden = ordenBusiness.recibirDatosCarga(datos);
+	        HttpHeaders responseHeaders = new HttpHeaders();
+	        responseHeaders.set("Order-Id", String.valueOf(orden.getId()));
+	        return new ResponseEntity<>("Datos recibidos correctamente", responseHeaders, HttpStatus.OK);
+	    } catch (BusinessException e) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+	    } catch (NotFoundException e) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	    } catch (Exception e) {
+	        log.error("Erro interno al recibir datos de carga", e);
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+	    }
+	}
 
 
 

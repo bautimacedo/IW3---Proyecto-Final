@@ -29,7 +29,7 @@ public class Orden {
     private Integer password;
 
     @Column(unique = true)
-    private Integer numeroOrden;
+    private Integer numeroOrden; //?> revisar
 
     @ManyToOne
     @JoinColumn(name = "id_producto")
@@ -49,16 +49,37 @@ public class Orden {
 
     // Campos numéricos flexibles (pueden ser nulos)
     @Column(nullable = true)
-    private Float preset;
+    private Float preset; //esto no se esta guardando en el punto 1)
 
     @Column(nullable = true)
-    private Float tara;
+    private Float tara; // punto 2)
 
     @Column(nullable = true)
-    private Double pesoFinal;
-
+    private Double pesoFinal; // punto 4) cuando se pesa finalmente el camion con la carga.
+    
+    
+    
+    
+    
     @Column(nullable = true)
-    private Date ultimaFechaInformacion;
+    private Date fechaRecepcionInicial; // cuando se creó la orden hay que agregarlo con el punto 1)
+    
+    @Column(nullable = true)
+    private Date fechaPesaje; // punto 2)
+    
+    @Column(nullable = true)
+    private Date fechaInicioCarga; // primer dato de carga primer masa primer caudal etc.
+    
+    @Column(nullable = true)
+    private Date ultimaFechaInformacion; //punto 3 es la ultima fecha que se cargo un dato
+    
+    @Column(nullable = true)
+    private Date fechaCierreCarga; // punto 4) la fecha en la que no se puede cargar mas carga, cambio de estado.
+    
+    
+    
+    
+    
 
     @Column(nullable = true)
     private Double ultimaMasaAcumulada;
@@ -70,17 +91,12 @@ public class Orden {
     private Double ultimaTemperatura;
 
     @Column(nullable = true)
-    private Double ultimaFlowRate;
+    private Double ultimaFlowRate; // esto es el caudal.
 
-    @Column(nullable = true)
-    private Date fechaPrevistaDeCarga;
 
-    @Column(nullable = true)
-    private Date fechaRecepcionInicial; // cuando se creó la orden
 
-    @Column(nullable = true)
-    private Date fechaInicioCarga; // primer dato de carga
 
-    @Column(nullable = true)
-    private Date fechaFinCarga; // último dato de carga
+
+
+
 }
