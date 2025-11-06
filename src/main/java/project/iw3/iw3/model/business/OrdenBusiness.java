@@ -220,6 +220,29 @@ public class OrdenBusiness implements IOrdenBusiness {
 			throw new BusinessException("Error al cambiar el estado de orden. Es necesario que se encuentre en CON_PESAJE_INICIAL");
 		}
 		
+		List<DetalleCarga> detalles = detalleCargaRepository.findByOrdenId(orderId);
+
+		if (detalles.isEmpty()) {
+			throw new BusinessException("No se pueden cerrar órdenes sin datos de carga.");
+		}
+
+		double promedioDensidad = 0;
+		double promedioTemperatura = 0;
+		double promedioCaudal = 0;
+
+		for (DetalleCarga detalle : detalles) {
+			promedioDensidad += detalle.getDensidad();
+			promedioTemperatura += detalle.getTemperatura();
+			promedioCaudal += detalle.getCaudal();
+		}
+
+		ordenEncontrada.get().setPromedioDensidad(promedioDensidad / detalles.size());
+		ordenEncontrada.get().setPromedioTemperatura(promedioTemperatura / detalles.size());
+		ordenEncontrada.get().setPromedioCaudal(promedioCaudal / detalles.size());
+
+		ordenEncontrada.get().setUltimaFechaInformacion(new java.util.Date());
+		ordenEncontrada.get().setFechaCierreCarga(new java.util.Date());
+		ordenEncontrada.get().setPesoFinal(ordenEncontrada.get().getUltimaMasaAcumulada());
 		ordenEncontrada.get().setEstadoOrden(EstadoOrden.CERRADA_PARA_CARGA);
 		ordenEncontrada.get().setPassword(null); // le sacamos la contrasenia.
 		this.update(ordenEncontrada.get());

@@ -65,7 +65,7 @@ public class Orden {
     private Date fechaRecepcionInicial; // cuando se creó la orden hay que agregarlo con el punto 1)
     
     @Column(nullable = true)
-    private Date fechaPesaje; // punto 2)
+    private Date fechaPesajeTara; // punto 2)
     
     @Column(nullable = true)
     private Date fechaInicioCarga; // primer dato de carga primer masa primer caudal etc.
@@ -77,7 +77,15 @@ public class Orden {
     private Date fechaCierreCarga; // punto 4) la fecha en la que no se puede cargar mas carga, cambio de estado.
     
     
-    
+    @Column(nullable = true)
+    private Double promedioDensidad;
+
+    @Column(nullable = true)
+    private Double promedioTemperatura;
+
+    @Column(nullable = true)
+    private Double promedioCaudal;
+
     
     
 
