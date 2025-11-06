@@ -74,4 +74,13 @@ public class Orden {
 
     @Column(nullable = true)
     private Date fechaPrevistaDeCarga;
+
+    @Column(nullable = true)
+    private Date fechaRecepcionInicial; // cuando se creó la orden
+
+    @Column(nullable = true)
+    private Date fechaInicioCarga; // primer dato de carga
+
+    @Column(nullable = true)
+    private Date fechaFinCarga; // último dato de carga
 }

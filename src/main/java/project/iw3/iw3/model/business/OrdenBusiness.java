@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
+import project.iw3.iw3.model.DatosCargaDTO;
+import project.iw3.iw3.model.DetalleCarga;
 import project.iw3.iw3.model.Orden;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
@@ -21,6 +23,7 @@ import project.iw3.iw3.model.business.interfaces.IClienteBusiness;
 import project.iw3.iw3.model.business.interfaces.IOrdenBusiness;
 import project.iw3.iw3.model.business.interfaces.IProductoBusiness;
 import project.iw3.iw3.model.enums.EstadoOrden;
+import project.iw3.iw3.model.persistence.DetalleCargaRepository;
 import project.iw3.iw3.model.persistence.OrdenRepository;
 import project.iw3.iw3.util.GeneradorDePasswordActivacionPaso2;
 import project.iw3.iw3.util.JsonUtiles;
@@ -30,6 +33,11 @@ import project.iw3.iw3.model.OrdenJsonDeserializer;
 @Service
 @Slf4j
 public class OrdenBusiness implements IOrdenBusiness {
+
+
+	@Autowired
+	private DetalleCargaRepository detalleCargaRepository;
+
 
 	@Autowired
     private OrdenRepository ordenRepository;
@@ -173,10 +181,22 @@ public class OrdenBusiness implements IOrdenBusiness {
 		ordenEncontrada.get().setPassword(password);
 		ordenEncontrada.get().setTara(tara);
 		ordenEncontrada.get().setEstadoOrden(EstadoOrden.CON_PESAJE_INICIAL);
-		this.update(ordenEncontrada.get());
-		return ordenEncontrada.get();
-		
-		
+		Orden orden = ordenEncontrada.get();
+
+		orden.setPassword(password);
+		orden.setTara(tara);
+		orden.setEstadoOrden(EstadoOrden.CON_PESAJE_INICIAL);
+
+		try {
+			Orden actualizada = ordenRepository.save(orden);
+			log.info("Orden {} actualizada a estado {} con password {}", 
+					actualizada.getId(), actualizada.getEstadoOrden(), actualizada.getPassword());
+			return actualizada;
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().message("Error al actualizar orden").ex(e).build();
+		}
+
 		
 
 	}
@@ -208,55 +228,70 @@ public class OrdenBusiness implements IOrdenBusiness {
     
 	// PUNTO 3)
 	@Override
-	public Orden recibirDatosCarga(Long orderId, Double masa, Double densidad, Double temperatura, Double caudal)
-			throws BusinessException, NotFoundException {
+public Orden recibirDatosCarga(DatosCargaDTO datos)
+        throws BusinessException, NotFoundException {
 
-		Optional<Orden> ordenEncontrada;
+    Optional<Orden> ordenEncontrada;
 
-		try {
-			ordenEncontrada = ordenRepository.findById(orderId);
-		} catch (Exception e) {
-			log.error(e.getMessage(), e);
-			throw BusinessException.builder().message("Error al recuperar la orden").ex(e).build();
-		}
+    try {
+        ordenEncontrada = ordenRepository.findById(datos.getOrderId());
+    } catch (Exception e) {
+        log.error(e.getMessage(), e);
+        throw BusinessException.builder().message("Error al recuperar la orden").ex(e).build();
+    }
 
-		if (ordenEncontrada.isEmpty()) {
-			throw NotFoundException.builder().message("No se encontro la orden con id=" + orderId).build();
-		}
+    if (ordenEncontrada.isEmpty()) {
+        throw NotFoundException.builder()
+                .message("No se encontró la orden con id=" + datos.getOrderId())
+                .build();
+    }
 
-		Orden orden = ordenEncontrada.get();
+    Orden orden = ordenEncontrada.get();
 
-		// el estado debe esatar en PESAJE INICIAL
-		if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
-			throw BusinessException.builder()
-					.message("La orden no esta habilitada para recibir datos de carga (estado invalido)")
-					.build();
-		}
+    // Verificar estado
+    if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+        throw BusinessException.builder()
+                .message("La orden no está habilitada para recibir datos de carga (estado inválido)")
+                .build();
+    }
 
-		// validaciones simples de datos
-		if (masa == null || densidad == null || temperatura == null || caudal == null) {
-			throw BusinessException.builder().message("Datos incompletos en la carga").build();
-		}
-		if (caudal < 0) {
-			throw BusinessException.builder().message("Caudal invalido (menor a 0)").build();
-		}
-		if (orden.getUltimaMasaAcumulada() != null && masa < orden.getUltimaMasaAcumulada()) {
-			throw BusinessException.builder().message("Masa acumulada retrocedio, dato invalido").build();
-		}
+    // Validaciones simples
+    if (datos.getMasa() == null || datos.getDensidad() == null ||
+        datos.getTemperatura() == null || datos.getCaudal() == null) {
+        throw BusinessException.builder().message("Datos incompletos en la carga").build();
+    }
 
-		// actualizamos los ultimos valores
-		orden.setUltimaFechaInformacion(new java.util.Date());
-		orden.setUltimaMasaAcumulada(masa);
-		orden.setUltimaDensidad(densidad);
-		orden.setUltimaTemperatura(temperatura);
-		orden.setUltimaFlowRate(caudal);
+    if (datos.getCaudal() < 0) {
+        throw BusinessException.builder().message("Caudal inválido (menor a 0)").build();
+    }
 
-		try {
-			return ordenRepository.save(orden);
-		} catch (Exception e) {
-			log.error(e.getMessage(), e);
-			throw BusinessException.builder().message("Error al actualizar datos de carga").ex(e).build();
-		}
-	}
+    if (orden.getUltimaMasaAcumulada() != null &&
+        datos.getMasa() < orden.getUltimaMasaAcumulada()) {
+        throw BusinessException.builder().message("Masa acumulada retrocedió, dato inválido").build();
+    }
+
+    // ✅ Si es el primer dato de carga, registrar fecha de inicio
+    if (orden.getFechaInicioCarga() == null) {
+        orden.setFechaInicioCarga(new java.util.Date());
+        log.info("Orden {} - Fecha de inicio de carga registrada: {}", datos.getOrderId(), orden.getFechaInicioCarga());
+    }
+
+    // Actualizar datos en cabecera
+    orden.setUltimaFechaInformacion(new java.util.Date());
+    orden.setUltimaMasaAcumulada(datos.getMasa());
+    orden.setUltimaDensidad(datos.getDensidad());
+    orden.setUltimaTemperatura(datos.getTemperatura());
+    orden.setUltimaFlowRate(datos.getCaudal());
+
+    try {
+        return ordenRepository.save(orden);
+    } catch (Exception e) {
+        log.error(e.getMessage(), e);
+        throw BusinessException.builder().message("Error al actualizar datos de carga").ex(e).build();
+    }
+}
+
+
+
 
 }

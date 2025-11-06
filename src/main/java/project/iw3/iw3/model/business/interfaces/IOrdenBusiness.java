@@ -2,6 +2,7 @@ package project.iw3.iw3.model.business.interfaces;
 
 import java.util.List;
 
+import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.Orden;
 import project.iw3.iw3.model.business.exceptions.*;
 
@@ -27,6 +28,6 @@ public interface IOrdenBusiness {
 	//punto4
 	public Orden cerrarOrden(Long orderId) throws BusinessException, NotFoundException, FoundException; 
 
-	Orden recibirDatosCarga(Long orderId, Double masa, Double densidad, Double temperatura, Double caudal) throws BusinessException, NotFoundException;
+  	public Orden recibirDatosCarga(DatosCargaDTO datos)throws BusinessException, NotFoundException;
 
 }

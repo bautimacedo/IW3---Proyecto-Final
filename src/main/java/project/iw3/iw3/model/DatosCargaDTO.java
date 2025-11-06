@@ -2,6 +2,7 @@ package project.iw3.iw3.model;
 
 public class DatosCargaDTO {
     private Long orderId;
+    private Integer password;
     private Double masa;
     private Double densidad;
     private Double temperatura;
@@ -10,6 +11,9 @@ public class DatosCargaDTO {
     // Getters y setters
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
+
+    public Integer getPassword() { return password; }
+    public void setPassword(Integer password) { this.password = password; }
 
     public Double getMasa() { return masa; }
     public void setMasa(Double masa) { this.masa = masa; }
