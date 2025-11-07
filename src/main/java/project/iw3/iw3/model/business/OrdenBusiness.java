@@ -218,6 +218,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		orden.setPassword(password);
 		orden.setTara(tara);
 		orden.setEstadoOrden(EstadoOrden.CON_PESAJE_INICIAL);
+		orden.setFechaPesajeTara(new java.util.Date());
 
 		try {
 			Orden actualizada = ordenRepository.save(orden);
