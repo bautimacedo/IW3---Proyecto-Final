@@ -4,7 +4,6 @@ import project.iw3.iw3.model.business.exceptions.*;
 import java.util.List;
 
 import io.micrometer.common.lang.Nullable;
-import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.Cliente;
 
 public interface IClienteBusiness {  

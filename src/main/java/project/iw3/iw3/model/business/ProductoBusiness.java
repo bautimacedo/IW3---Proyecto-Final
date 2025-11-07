@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import io.micrometer.common.lang.Nullable;
 import jakarta.transaction.Transactional;
-import project.iw3.iw3.model.Cliente;
 import project.iw3.iw3.model.Producto;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;

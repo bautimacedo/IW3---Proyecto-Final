@@ -30,4 +30,5 @@ public interface IOrdenBusiness {
 
   	public Orden recibirDatosCarga(DatosCargaDTO datos)throws BusinessException, NotFoundException;
 
+	Orden loadByNumeroOrden(Integer numeroOrden) throws NotFoundException, BusinessException;
 }

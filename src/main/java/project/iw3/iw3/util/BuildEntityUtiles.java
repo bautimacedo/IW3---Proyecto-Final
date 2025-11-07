@@ -1,6 +1,5 @@
 package project.iw3.iw3.util;
 
-import project.iw3.iw3.util.*;
 
 import project.iw3.iw3.model.*;
 

@@ -69,6 +69,9 @@ public class OrdenBusiness implements IOrdenBusiness {
         }
 	}
 
+
+
+
 	@Override
 	public Orden load(long id) throws NotFoundException, BusinessException { //cargar una orden por id
 		Optional<Orden> o;
@@ -332,6 +335,25 @@ public class OrdenBusiness implements IOrdenBusiness {
 	    
 	}
 
+
+
+
+	@Override
+	public Orden loadByNumeroOrden(Integer numeroOrden) throws NotFoundException, BusinessException {
+		Optional<Orden> o;
+		try {
+			o = ordenRepository.findByNumeroOrden(numeroOrden);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().ex(e).message(e.getMessage()).build();
+		}
+		if (o.isEmpty()) {
+			throw NotFoundException.builder()
+					.message("No se encuentra la orden con numeroOrden=" + numeroOrden)
+					.build();
+		}
+		return o.get();
+	}
 
 
 

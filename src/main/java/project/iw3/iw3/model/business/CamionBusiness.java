@@ -8,7 +8,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,7 +15,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.micrometer.common.lang.Nullable;
 import jakarta.transaction.Transactional;
 import project.iw3.iw3.model.Camion;
-import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.Cisterna;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
@@ -305,13 +303,13 @@ public class CamionBusiness implements ICamionBusiness {
 	    // Usamos clear/addAll para que JPA maneje el ORPHAN REMOVAL (borrado de las no incluidas)
 	    
 	    // 3.1 Desasigna las cisternas que se van a eliminar para evitar errores de restricción foreign key si la eliminacion falla.
-	    for(Cisterna c : cisternasActuales.values()){
+	   /*  for(Cisterna c : cisternasActuales.values()){
 	        // Si quieres que la cisterna se elimine de la BD:
 	        // NO HACER NADA, el clear() y el orphanRemoval=true se encargan.
 	        
 	        // Si quieres que la cisterna se quede en la BD pero se desasigne del Camión:
 	        // c.setCamion(null); // Desasigna
-	    }
+	    }*/
 	    
 	    camion.getCisterna().clear();           // JPA marca todas las entidades existentes para eliminación
 	    camion.getCisterna().addAll(cisternasActualizadas); // JPA marca las nuevas para inserción/actualización

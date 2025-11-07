@@ -19,6 +19,6 @@ public interface OrdenRepository extends JpaRepository <Orden, Long> {
 
 	Optional<Orden> findByNumeroOrden(Integer numeroOrden);
 
-	
+
 	
 }
