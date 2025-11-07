@@ -110,18 +110,19 @@ public final class JsonUtiles {
 	    return defaultValue;
 	}
 
-	public static double getDouble(JsonNode node, String[] attrs, double defaultValue) {
-		Double r = null;
-		for (String attr : attrs) {
-			if (node.get(attr) != null && node.get(attr).isDouble()) {
-				r = node.get(attr).asDouble();
-				break;
-			}
-		}
-		if (r == null)
-			r = defaultValue;
-		return r;
-	}
+        public static double getDouble(JsonNode node, String[] attrs, double defaultValue) {
+                Double r = null;
+                for (String attr : attrs) {
+                        JsonNode value = node.get(attr);
+                        if (value != null && value.isNumber()) {
+                                r = value.asDouble();
+                                break;
+                        }
+                }
+                if (r == null)
+                        r = defaultValue;
+                return r;
+        }
 	
 	public static Long getLong(JsonNode node, String[] attrs, long defaultValue) {
 	    Long r = null;
