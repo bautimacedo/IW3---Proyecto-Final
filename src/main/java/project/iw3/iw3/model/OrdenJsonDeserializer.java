@@ -39,59 +39,23 @@ public class OrdenJsonDeserializer extends StdDeserializer<Orden> {
 	}
 
 	@Override
-	public Orden deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+	public Orden deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException{
 		try {
-			log.info("🟢 Iniciando deserialización de Orden externa...");
+			log.info("Iniciando deserialización de Orden externa...");
 			JsonNode node = jp.getCodec().readTree(jp);
 			if (node == null) {
-				log.error("❌ El nodo raíz del JSON es null.");
 				throw new IOException("JSON vacío o inválido");
 			}
 
-			log.debug("📦 JSON completo recibido:\n{}", node.toPrettyString());
+			log.debug("JSON completo recibido:\n{}", node.toPrettyString());
 
 			float preset = (float) JsonUtiles.getDouble(node, ConstantesJson.ORDEN_PRESET_ATTRIBUTES, 0);
-			Integer numeroOrden = JsonUtiles.getInteger(node, ConstantesJson.ORDEN_NUMERORDEN_ATTRIBUTES, 0);
-
-			log.debug("🔢 Datos base: numeroOrden={}, preset={}", numeroOrden, preset);
-
-			// ------------------- CHOFER -------------------
-			log.debug("🧍 Buscando chofer...");
-			JsonNode choferNode = JsonUtiles.getJsonNode(node, ConstantesJson.CHOFER_NODE_ATTRIBUTES);
-			log.debug("📄 Nodo chofer encontrado: {}", choferNode != null ? choferNode.toPrettyString() : "❌ null");
+			Camion camion = JsonUtiles.getCamion(node, ConstantesJson.CAMION_PATENTE_ATTRIBUTES, camionBusiness,cisternaBusiness, preset);
+			Integer numeroOrden = JsonUtiles.getInteger(node, ConstantesJson.ORDEN_NUMERORDEN_ATTRIBUTES, 0);			
 			Chofer chofer = JsonUtiles.getChofer(node, ConstantesJson.DRIVER_DNI_ATTRIBUTES, choferBusiness);
-			log.debug("🧾 Chofer después de getChofer(): {}", chofer != null ? chofer.toString() : "❌ null");
-
-			// ------------------- CAMION -------------------
-			log.debug("🚛 Buscando camión...");
-			JsonNode camionNode = JsonUtiles.getJsonNode(node, ConstantesJson.CAMION_NODE_ATTRIBUTES);
-			log.debug("📄 Nodo camión encontrado: {}", camionNode != null ? camionNode.toPrettyString() : "❌ null");
-			String patenteDebug = JsonUtiles.getString(camionNode != null ? camionNode : node,
-					ConstantesJson.CAMION_PATENTE_ATTRIBUTES, "no encontrado");
-			log.debug("🔍 Patente detectada desde JSON: {}", patenteDebug);
-			Camion camion = JsonUtiles.getCamion(node, ConstantesJson.CAMION_PATENTE_ATTRIBUTES, camionBusiness,
-					cisternaBusiness);
-			log.debug("🚚 Camión después de getCamion(): {}", camion != null ? camion.toString() : "❌ null");
-
-			// ------------------- CLIENTE -------------------
-			log.debug("🏢 Buscando cliente...");
-			JsonNode clienteNode = JsonUtiles.getJsonNode(node, ConstantesJson.CLIENTE_NODE_ATTRIBUTES);
-			log.debug("📄 Nodo cliente encontrado: {}", clienteNode != null ? clienteNode.toPrettyString() : "❌ null");
 			Cliente cliente = JsonUtiles.getCliente(node, ConstantesJson.CLIENTE_NOMBRE_ATTRIBUTES, clienteBusiness);
-			log.debug("💳 Cliente después de getCliente(): {}", cliente != null ? cliente.toString() : "❌ null");
-
-			// ------------------- PRODUCTO -------------------
-			log.debug("🧪 Buscando producto...");
-			JsonNode productoNode = JsonUtiles.getJsonNode(node, ConstantesJson.PRODUCTO_NODE_ATTRIBUTES);
-			log.debug("📄 Nodo producto encontrado: {}", productoNode != null ? productoNode.toPrettyString() : "❌ null");
-			Producto producto = JsonUtiles.getProducto(node, ConstantesJson.PRODUCTO_NOMBRE_ATTRIBUTES,
-					productoBusiness);
-			log.debug("⚗️ Producto después de getProducto(): {}", producto != null ? producto.toString() : "❌ null");
-
-			// ------------------- RESULTADO -------------------
-			log.info("✅ Resultado intermedio -> Chofer={}, Camion={}, Cliente={}, Producto={}",
-					chofer != null, camion != null, cliente != null, producto != null);
-
+			Producto producto = JsonUtiles.getProducto(node, ConstantesJson.PRODUCTO_NOMBRE_ATTRIBUTES,productoBusiness);
+			
 			Orden r = new Orden();
 			if (producto != null && cliente != null && camion != null && chofer != null) {
 				r.setPreset(preset);
@@ -101,23 +65,16 @@ public class OrdenJsonDeserializer extends StdDeserializer<Orden> {
 				r.setCamion(camion);
 				r.setNumeroOrden(numeroOrden);
 				r.setEstadoOrden(EstadoOrden.PENDIENTE_PESAJE_INICIAL);
-				log.info("✅ Orden creada exitosamente con estado: {}", r.getEstadoOrden());
-			} else {
-				log.error("❌ Faltan entidades requeridas para construir la orden:");
-				if (producto == null)
-					log.error("   - Producto es null");
-				if (cliente == null)
-					log.error("   - Cliente es null");
-				if (camion == null)
-					log.error("   - Camión es null");
-				if (chofer == null)
-					log.error("   - Chofer es null");
+				r.setFechaRecepcionInicial(new java.util.Date());
+			
+			}else {
+				throw new IOException("Verificar que todos los campos esten completos");
+				
 			}
-
+				
 			return r;
 
 		} catch (Exception ex) {
-			log.error("💥 Error deserializando Orden: {}", ex.getMessage(), ex);
 			throw new IOException("Error deserializando Orden", ex);
 		}
 	}

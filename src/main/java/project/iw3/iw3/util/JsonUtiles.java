@@ -1,5 +1,6 @@
 package project.iw3.iw3.util;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
@@ -24,6 +25,7 @@ import project.iw3.iw3.model.business.interfaces.IChoferBusiness;
 import project.iw3.iw3.model.business.interfaces.ICisternaBusiness;
 import project.iw3.iw3.model.business.interfaces.IClienteBusiness;
 import project.iw3.iw3.model.business.interfaces.IProductoBusiness;
+import io.micrometer.common.lang.Nullable;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -255,99 +257,119 @@ public final class JsonUtiles {
 	     * */
 	    
 	    //entonces quedaria driverNode = {"document":"40123456","name":"Juan","lastname":"Pérez"}.
-	  public static Chofer getChofer(JsonNode root, String[] attrs, IChoferBusiness choferBusiness) throws BusinessException {
-    // 1) Buscar el nodo correspondiente al chofer
-    JsonNode choferNode = getJsonNode(root, ConstantesJson.CHOFER_NODE_ATTRIBUTES);
-    if (choferNode == null || choferNode.isEmpty()) {
-        log.error("JSON sin nodo de chofer valido");
-        throw new BusinessException("No se encontro el nodo de chofer en el JSON");
-    }
-
-    // 2) Extraer DNI del chofer usando las posibles claves configuradas
-    String dni = firstNonBlank(
-        getString(choferNode, ConstantesJson.DRIVER_DNI_ATTRIBUTES, null),
-        getString(choferNode, attrs, null)
-    );
-
-    if (dni == null) {
-        log.error("Chofer sin dni");
-        throw new BusinessException("Chofer sin dni en JSON");
-    }
-
-    // 3) Extraer nombre y apellido si vienen en el json
-    String nombre = getString(choferNode, new String[]{"nombre", "name", "first_name"}, null);
-    String apellido = getString(choferNode, new String[]{"apellido", "last_name", "surname"}, null);
-
-    try {
-        // 4) Crear o recuperar el chofer existente
-        Chofer chofer = choferBusiness.loadOrCreate(dni, nombre, apellido);
-        return chofer;
-    } catch (Exception e) {
-        log.error("Error procesando chofer {}: {}", dni, e.getMessage());
-        throw new BusinessException("Error procesando chofer: " + e.getMessage(), e);
-    }
-}
+	    
+	    
+	    
+	// Objetivo --> extraer el identificador del chofer (DNI) del JSON y luego usar la lógica de negocio (choferBusiness) 
+	// para obtener o crear la entidad Chofer que se utilizará en la Orden.   
+	// JsonNode root: Es el nodo JSON raíz del body completo de la orden que se está deserializando.
+	// String[] attrs: Es un array de posibles nombres de atributos para el DNI del chofer (adicionales a los definidos en ConstantesJson).
+	
+	public static Chofer getChofer(JsonNode root, String[] attrs, IChoferBusiness choferBusiness) throws BusinessException {
+		  
+		    // 1) Buscar el nodo correspondiente al chofer
+		
+		    JsonNode choferNode = getJsonNode(root, ConstantesJson.CHOFER_NODE_ATTRIBUTES);
+		    
+		    if (choferNode == null || choferNode.isEmpty()) {
+		        log.error("JSON sin nodo de chofer valido");
+		        throw new BusinessException("No se encontro el nodo de chofer en el JSON");
+		    }
+		
+		    // 2) Extraer DNI del chofer usando las posibles claves configuradas
+		    // firts nonblank toma varias cadenas y devuelve la primera que no sea nula ni este vacia.
+		    
+		    String dni = firstNonBlank(
+		        getString(choferNode, ConstantesJson.DRIVER_DNI_ATTRIBUTES, null),
+		        getString(choferNode, attrs, null)
+		    );
+		
+		    if (dni == null) {
+		        log.error("Chofer sin dni");
+		        throw new BusinessException("Chofer sin dni en JSON");
+		    }
+		
+		    // 3) Extraer nombre y apellido si vienen en el json
+		    
+		    String nombre = getString(choferNode, ConstantesJson.DRIVER_NOMBRE_ATTRIBUTES, null);
+		    String apellido = getString(choferNode, ConstantesJson.DRIVER_APELLIDO_ATTRIBUTES, null);
+		
+		    try {
+		    	
+		        // 4) Crear o recuperar el chofer existente
+		    	
+		        Chofer chofer = choferBusiness.loadOrCreate(dni, nombre, apellido);
+		        return chofer;
+		        
+		    } catch (Exception e) {
+		        log.error("Error procesando chofer {}: {}", dni, e.getMessage());
+		        throw new BusinessException("Error procesando chofer: " + e.getMessage(), e);
+		    }
+	}
 	  
-	   public static Camion getCamion(
-        JsonNode root,
-        String[] attrs, // compatibilidad con llamadas antiguas
-        ICamionBusiness camionBusiness,
-        ICisternaBusiness cisternaBusiness
-) throws BusinessException {
+	   public static Camion getCamion(JsonNode root, String[] attrs, ICamionBusiness camionBusiness, ICisternaBusiness cisternaBusiness, @Nullable float preset) throws BusinessException, IOException {
 
-    JsonNode camionNode = getJsonNode(root, ConstantesJson.CAMION_NODE_ATTRIBUTES);
-    if (camionNode == null || camionNode.isNull()) {
-        log.error("JSON sin camion ({}).", (Object) ConstantesJson.CAMION_NODE_ATTRIBUTES);
-        throw new BusinessException("Falta el nodo de camión en el JSON.");
-    }
-
-    // ✅ usamos directamente las claves definidas en ConstantesJson
-    String patente = getString(camionNode, ConstantesJson.CAMION_PATENTE_ATTRIBUTES, null);
-
-    if (patente == null) {
-        log.error("Caminn sin patente en el JSON. Claves aceptadas: {}", (Object) ConstantesJson.CAMION_PATENTE_ATTRIBUTES);
-        throw new BusinessException("Camion: 'patente' es obligatoria.");
-    }
-
-    // descripción opcional
-    String descripcion = getString(camionNode, ConstantesJson.CAMION_DESCRIPCION_ATTRIBUTES, null);
-
-    // cisternas (solo se loguean)
-    if (camionNode.hasNonNull("tanks")) {
-        JsonNode tanks = camionNode.get("tanks");
-        log.debug("Se recibieron {} cisternas en el JSON de camión (se ignoran en esta etapa).",
-                tanks.isArray() ? tanks.size() : 1);
-    }
-
-    // lookup / creación
-    try {
-        Camion camion = camionBusiness.loadOrCreate(patente, descripcion);
-        log.info("Camión listo (loadOrCreate): patente={}", camion.getPatente());
-        return camion;
-    } catch (BusinessException be) {
-        log.error("Error en loadOrCreate(camión): {}", be.getMessage(), be);
-        throw be;
-    } catch (Exception e) {
-        log.error("Error inesperado procesando camión: {}", e.getMessage(), e);
-        throw new BusinessException("Error procesando camión: " + e.getMessage(), e);
-    }
-}
+			    JsonNode camionNode = getJsonNode(root, ConstantesJson.CAMION_NODE_ATTRIBUTES);
+			    
+			    if (camionNode == null || camionNode.isNull()) {
+			        log.error("JSON sin camion ({}).", (Object) ConstantesJson.CAMION_NODE_ATTRIBUTES);
+			        throw new BusinessException("Falta el nodo de camión en el JSON.");
+			    }
+			
+			   // vamos a buscar por patente.
+			    String patente = getString(camionNode, ConstantesJson.CAMION_PATENTE_ATTRIBUTES, null);
+			
+			    if (patente == null) {
+			        log.error("Camion sin patente en el JSON. Claves aceptadas: {}", (Object) ConstantesJson.CAMION_PATENTE_ATTRIBUTES);
+			        throw new BusinessException("Camion: 'patente' es obligatoria.");
+			    }
+			
+			    // descripción opcional
+			    String descripcion = getString(camionNode, ConstantesJson.CAMION_DESCRIPCION_ATTRIBUTES, null);
+			
+			    //deberia usar proveniente de ConstantesJson pero vamos a dejar que la unica forma sea mediante tanks
+			    JsonNode cisternasNode = camionNode.hasNonNull("tanks") ? camionNode.get("tanks") : null; 
+			    float sumatoria_preset = 0;
+			    
+			    if(cisternasNode != null) {
+			    	for (JsonNode cisternas : cisternasNode) {
+				    	sumatoria_preset += (float) JsonUtiles.getDouble(cisternas, ConstantesJson.CISTERNA_CAPACIDAD_LITROS_ATTRIBUTES, 0);
+				    }
+				    if(sumatoria_preset < preset) {
+				    	throw new IOException("El volumen solicitado (preset=" + preset + ") es superior a la capacidad total de las cisternas (" + sumatoria_preset + ").");
+				    }
+			    }
+			    
+			
+			    // lookup / creación
+			    try {
+			        Camion camion = camionBusiness.loadOrCreate(patente, descripcion, cisternasNode);
+			        
+			        log.info("Camión listo (loadOrCreate): patente={}", camion.getPatente());
+			        return camion;
+			        
+			    } catch (BusinessException be) {
+			        log.error("Error en loadOrCreate(camión): {}", be.getMessage(), be);
+			        throw be;
+			        
+			    } catch (Exception e) {
+			        log.error("Error inesperado procesando camión: {}", e.getMessage(), e);
+			        throw new BusinessException("Error procesando camión: " + e.getMessage(), e);
+			    }
+	   }
 
 	  
 	  
-	  /**
- * Devuelve el primer String no nulo ni vacio de los pasados por parametro.
- * Si todos son nulos o vacios, devuelve null.
- */
-public static String firstNonBlank(String... values) {
-    if (values == null) return null;
-    for (String v : values) {
-        if (v != null && !v.trim().isEmpty()) {
-            return v.trim();
-        }
-    }
-    return null;
-}
+		// clase utilitaria para getCamion
+		public static String firstNonBlank(String... values) {
+			    if (values == null) return null;
+			    for (String v : values) {
+			        if (v != null && !v.trim().isEmpty()) {
+			            return v.trim();
+			        }
+			    }
+			    return null;
+		}
 
 	  public static Producto getProducto(JsonNode root, String[] attrs, IProductoBusiness productoBusiness) throws BusinessException {
     // 1) Buscar el nodo del producto, por ejemplo "product" o similar

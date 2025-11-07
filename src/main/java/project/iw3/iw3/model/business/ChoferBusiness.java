@@ -48,43 +48,49 @@ public class ChoferBusiness implements IChoferBusiness {
        }
     }
     
-    @Override
-@Transactional
-public Chofer loadOrCreate(String dni, @Nullable String nombre, @Nullable String apellido) throws BusinessException {
-    // 1) Validacion basica
-    if (dni == null || dni.isBlank()) {
-        throw new BusinessException("Chofer: 'dni' es obligatorio.");
-    }
-
-    final String doc = dni.trim();
-
-    // 2) Intentamos buscar el chofer por dni
-    Optional<Chofer> found = choferDAO.findByDni(doc);
-    if (found.isPresent()) {
-        log.debug("Chofer existente recuperado: {}", found.get().getDni());
-        return found.get();
-    }
-
-    // 3) Si no existe, creamos uno nuevo
-    try {
-        Chofer nuevo = new Chofer();
-        nuevo.setDni(doc);
-        nuevo.setNombre(nombre != null ? nombre.trim() : "SIN_NOMBRE");
-        nuevo.setApellido(apellido != null ? apellido.trim() : "SIN_APELLIDO");
-
-        Chofer saved = choferDAO.save(nuevo);
-        log.info("Chofer creado: dni={}", saved.getDni());
-        return saved;
-    } catch (DataIntegrityViolationException e) {
-        // 4) Si hubo colision o insercion concurrente, reintentamos leer
-        log.warn("Colision creando chofer {}, releyendo: {}", doc, e.getMessage());
-        return choferDAO.findByDni(doc)
-                .orElseThrow(() -> new BusinessException("No se pudo crear ni recuperar el chofer con dni=" + doc));
-    } catch (Exception e) {
-        log.error("Error creando chofer {}: {}", doc, e.getMessage(), e);
-        throw new BusinessException("Error creando chofer: " + e.getMessage(), e);
-    }
-}
+    
+    
+	
+	//objetivo --> crear o buscar un chofer
+	@Override
+	@Transactional //asegura que la operacion se haga en una transaccion de bd.
+	
+	public Chofer loadOrCreate(String dni, @Nullable String nombre, @Nullable String apellido) throws BusinessException {
+		    // 1) Validacion basica
+		
+		    if (dni == null || dni.isBlank()) {
+		        throw new BusinessException("Chofer: 'dni' es obligatorio.");
+		    }
+		
+		    final String doc = dni.trim(); //no creo que haga falta pero por las dudas.
+		
+		    // 2) Intentamos buscar el chofer por dni
+		    
+		    Optional<Chofer> found = choferDAO.findByDni(doc); //Recordemos que el resultado de la bd se envuelve en un objeto optional.
+		    // el proposito general es eliminar el riesgo de nullpointerexception.si no se encuentra el chofer, entonces optional estara vacio simplemente.
+		    //optional.isPresent es verdadero si contiene un objeto.
+		    
+		    if (found.isPresent()) {
+		        log.debug("Chofer existente recuperado: {}", found.get().getDni());
+		        return found.get();
+		    }
+		
+		    // 3) Si no existe, creamos uno nuevo
+		    try {
+		        Chofer nuevo = new Chofer();
+		        nuevo.setDni(doc);
+		        nuevo.setNombre(nombre != null ? nombre.trim() : "SIN_NOMBRE");
+		        nuevo.setApellido(apellido != null ? apellido.trim() : "SIN_APELLIDO");
+		
+		        Chofer saved = choferDAO.save(nuevo);
+		        log.info("Chofer creado: dni={}", saved.getDni());
+		        return saved;
+		
+		    } catch (Exception e) {
+		        log.error("Error creando chofer {}: {}", doc, e.getMessage(), e);
+		        throw new BusinessException("Error creando chofer: " + e.getMessage(), e);
+		    }
+	}
 
 
     @Override

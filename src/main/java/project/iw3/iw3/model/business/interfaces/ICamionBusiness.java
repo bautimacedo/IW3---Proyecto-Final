@@ -24,6 +24,7 @@ public interface ICamionBusiness {
 
     void delete(long id) throws NotFoundException, BusinessException;
     
-    public Camion loadOrCreate(String patente, @Nullable String descripcion) throws BusinessException;
+    public Camion loadOrCreate(String patente, @Nullable String descripcion, @Nullable JsonNode cisternasNode) throws BusinessException;
+    
     
 }

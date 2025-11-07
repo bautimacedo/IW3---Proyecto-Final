@@ -34,7 +34,23 @@ import project.iw3.iw3.model.OrdenJsonDeserializer;
 @Slf4j
 public class OrdenBusiness implements IOrdenBusiness {
 
+	@Autowired
+    private IClienteBusiness clienteBusiness;
 
+    @Autowired
+    private ICamionBusiness camionBusiness;
+
+    @Autowired
+
+    private ICisternaBusiness cisternaBusiness;
+
+    @Autowired
+    private IProductoBusiness productoBusiness;
+
+    @Autowired
+    private IChoferBusiness choferBusiness;
+	
+	
 	@Autowired
 	private DetalleCargaRepository detalleCargaRepository;
 
@@ -112,21 +128,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		}
 	}
 	
-	@Autowired
-    private IClienteBusiness clienteBusiness;
-
-    @Autowired
-    private ICamionBusiness camionBusiness;
-
-    @Autowired
-
-    private ICisternaBusiness cisternaBusiness;
-
-    @Autowired
-    private IProductoBusiness productoBusiness;
-
-    @Autowired
-    private IChoferBusiness choferBusiness;
+	
 
 	
 	//con esto transormamos un json en una orden ya lista. Esto es el punto 1).
@@ -145,6 +147,8 @@ public class OrdenBusiness implements IOrdenBusiness {
         Orden orden;
         
         try {
+        	// Después de configurar el ObjectMapper (mapper) con nuestro deserializador personalizado, esta línea ejecuta el proceso:
+        	// recibe la cadena json y Orden.class: Le dice a Jackson: "Convertila en un objeto de tipo Orden."
             orden = mapper.readValue(json, Orden.class);
         } catch (IOException e) {
         	
