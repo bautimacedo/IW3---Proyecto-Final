@@ -21,10 +21,8 @@ import project.iw3.iw3.model.Cisterna;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
-import project.iw3.iw3.model.business.interfaces.ICamionBusiness;
 import project.iw3.iw3.model.persistence.CamionRepository;
 import project.iw3.iw3.model.business.interfaces.*;
-import project.iw3.iw3.util.ConstantesJson;
 import project.iw3.iw3.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,85 +30,112 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CamionBusiness implements ICamionBusiness {
 	
-	@Autowired
-	ICisternaBusiness cisternaBusiness;
+	  @Autowired
+    private CamionRepository camionDAO;
 
     @Autowired
-    private CamionRepository camionRepository;
+    private ICisternaBusiness cisternaBusiness;
 
     @Override
     public List<Camion> list() throws BusinessException {
         try {
-            return camionRepository.findAll();
+            return camionDAO.findAll();
         } catch (Exception e) {
-            throw new BusinessException(e.getMessage(), e);
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
         }
     }
 
     @Override
     public Camion load(long id) throws NotFoundException, BusinessException {
+        Optional<Camion> r;
         try {
-            return camionRepository.findById(id)
-                    .orElseThrow(() -> new NotFoundException("No existe el camión con id " + id));
-        } catch (NotFoundException e) {
-            throw e;
+            r = camionDAO.findById(id);
         } catch (Exception e) {
-            throw new BusinessException(e.getMessage(), e);
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
         }
+
+        if (r.isEmpty()) {
+            throw NotFoundException.builder()
+                    .message("No se encuentra el Camión id = " + id)
+                    .build();
+        }
+        return r.get();
     }
 
     @Override
     public Camion load(String patente) throws NotFoundException, BusinessException {
+        Optional<Camion> r;
         try {
-            return camionRepository.findByPatente(patente)
-                    .orElseThrow(() -> new NotFoundException("No existe el camión con la patente " + patente));
-        } catch (NotFoundException e) {
-            throw e;
+            r = camionDAO.findByPatente(patente);
         } catch (Exception e) {
-            throw new BusinessException(e.getMessage(), e);
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
         }
+
+        if (r.isEmpty()) {
+            throw NotFoundException.builder()
+                    .message("No se encuentra el Camión con patente = '" + patente + "'")
+                    .build();
+        }
+        return r.get();
     }
 
     @Override
     public Camion add(Camion camion) throws FoundException, BusinessException {
+        // Validar existencia previa
         try {
-            // Validar duplicado por patente
-            if (camionRepository.findByPatente(camion.getPatente()).isPresent()) {
-                throw new FoundException("Ya existe un camión con esa patente");
-            }
-            return camionRepository.save(camion);
-        } catch (FoundException e) {
-            throw e;
+            load(camion.getPatente());
+            throw FoundException.builder()
+                    .message("Ya existe un Camión con la patente '" + camion.getPatente() + "'")
+                    .build();
+        } catch (NotFoundException e) {
+            // No existe, seguimos
+        }
+
+        try {
+            return camionDAO.save(camion);
         } catch (Exception e) {
-            throw new BusinessException(e.getMessage(), e);
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
         }
     }
 
     @Override
     public Camion update(Camion camion) throws FoundException, NotFoundException, BusinessException {
+        // Debe existir el ID
+        load(camion.getId());
+
+        // Validar duplicado de patente en otro Camión
+        Optional<Camion> patenteExistente;
         try {
-            // Validar existencia
-            load(camion.getId());
-
-            // Validar duplicado en OTRO camión
-            if (camionRepository.findByPatenteAndIdNot(camion.getPatente(), camion.getId()).isPresent()) {
-                throw new FoundException("Ya existe otro camión con esa patente");
-            }
-
-            return camionRepository.save(camion);
-        } catch (FoundException | NotFoundException e) {
-            throw e;
+            patenteExistente = camionDAO.findByPatenteAndIdNot(camion.getPatente(), camion.getId());
         } catch (Exception e) {
-            throw new BusinessException(e.getMessage(), e);
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
+        }
+
+        if (patenteExistente != null && patenteExistente.isPresent()) {
+            throw FoundException.builder()
+                    .message("Se encontró otro Camión con patente = " + camion.getPatente())
+                    .build();
+        }
+
+        try {
+            return camionDAO.save(camion);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw BusinessException.builder().ex(e).build();
         }
     }
 
-     @Override
+    @Override
     public void delete(long id) throws NotFoundException, BusinessException {
         load(id);
 
         try {
-            camionRepository.deleteById(id);
+            camionDAO.deleteById(id);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw BusinessException.builder().ex(e).build();
@@ -130,7 +155,7 @@ public class CamionBusiness implements ICamionBusiness {
 		
 		    // 2. intentar buscar el camion existente
 		    
-		    Optional<Camion> found = camionRepository.findByPatente(pat);
+		    Optional<Camion> found = camionDAO.findByPatente(pat);
 		    
 		    // 3. verificar si vienen cisternas en el body
 		    
@@ -182,7 +207,7 @@ public class CamionBusiness implements ICamionBusiness {
 			        	nuevo.setCisterna(nuevasCisternas);
 			        }
 		        
-		        Camion saved = camionRepository.save(nuevo);
+		        Camion saved = camionDAO.save(nuevo);
 		        log.info("Camion creado con {} cisternas: patente={}", saved.getCisterna().size(), saved.getPatente());
 		        return saved;
 		       
@@ -292,7 +317,7 @@ public class CamionBusiness implements ICamionBusiness {
 	    camion.getCisterna().addAll(cisternasActualizadas); // JPA marca las nuevas para inserción/actualización
 
 	    // El return es opcional ya que es @Transactional, pero ayuda a la claridad:
-	    return camionRepository.save(camion); 
+	    return camionDAO.save(camion); 
 	}
 	
    

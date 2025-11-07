@@ -16,7 +16,7 @@ import lombok.Getter;
 public class Cliente {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @Column(length = 100, unique = true, nullable = false)
     private String nombreEmpresa; //Seria el nombre q figura en la AFIP
