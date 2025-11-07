@@ -79,7 +79,7 @@ public class OrdenRestController extends BaseRestController {
     	try {
     		Orden orden = ordenBusiness.registrarPesoInicial(patente, tara);
             HttpHeaders responseHeaders = new HttpHeaders();
-            responseHeaders.set("Order-Id", String.valueOf(orden.getId()));
+            responseHeaders.set("Order-Id", String.valueOf(orden.getNumeroOrden()));
             return new ResponseEntity<>(orden.getPassword().toString(), responseHeaders, HttpStatus.OK);
     	} catch (Exception e) {
     		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
@@ -91,13 +91,13 @@ public class OrdenRestController extends BaseRestController {
     
     //PUNTO 4)
     @PostMapping("/cerrar-carga")
-    public ResponseEntity<?> closeOrder(@RequestHeader("IdOrden") Long orderId) {
+    public ResponseEntity<?> closeOrder(@RequestHeader("NumeroOrden") Integer numeroOrden) {
     	
     	
     	try{
-    		Orden orden = ordenBusiness.cerrarOrden(orderId);
+    		Orden orden = ordenBusiness.cerrarOrden(numeroOrden);
             HttpHeaders responseHeaders = new HttpHeaders();
-            responseHeaders.set("Order-Id", String.valueOf(orden.getId()));
+            responseHeaders.set("Order-Number", String.valueOf(orden.getNumeroOrden()));
             return new ResponseEntity<>(responseHeaders, HttpStatus.OK);
     	}catch (Exception e) {
     		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
@@ -111,7 +111,7 @@ public class OrdenRestController extends BaseRestController {
 	    try {
 	        Orden orden = ordenBusiness.recibirDatosCarga(datos);
 	        HttpHeaders responseHeaders = new HttpHeaders();
-	        responseHeaders.set("Order-Id", String.valueOf(orden.getId()));
+	        responseHeaders.set("Order-Number", String.valueOf(orden.getNumeroOrden()));
 	        return new ResponseEntity<>("Datos recibidos correctamente", responseHeaders, HttpStatus.OK);
 	    } catch (BusinessException e) {
 	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

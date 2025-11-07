@@ -1,7 +1,8 @@
 package project.iw3.iw3.model;
 
+
 public class DatosCargaDTO {
-    private Long orderId; //nuestra BD 
+    private Integer orderId; //nuestra BD 
     private Integer password;
     private Double masa;
     private Double densidad;
@@ -9,8 +10,8 @@ public class DatosCargaDTO {
     private Double caudal;
 
     // Getters y setters
-    public Long getOrderId() { return orderId; }
-    public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public Integer getOrderId() { return orderId; }
+    public void setOrderId(Integer orderId) { this.orderId = orderId; }
 
     public Integer getPassword() { return password; }
     public void setPassword(Integer password) { this.password = password; }

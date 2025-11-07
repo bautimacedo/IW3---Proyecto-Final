@@ -73,16 +73,21 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 
 	@Override
-	public Orden load(long id) throws NotFoundException, BusinessException { //cargar una orden por id
+	public Orden load(Integer numeroOrden) throws NotFoundException, BusinessException { //cargar una orden por numero de orden
+		
+		if(numeroOrden == null) {
+			throw NotFoundException.builder().message("El numero de orden es obligatorio").build();
+		}
+		
 		Optional<Orden> o;
 		try {
-			o = ordenRepository.findById(id);
+			o = ordenRepository.findByNumeroOrden(numeroOrden);
 		}catch(Exception e){
 			log.error(e.getMessage(), e);
 			throw BusinessException.builder().ex(e).message(e.getMessage()).build();
 		}
 		if(o.isEmpty()) {
-			throw NotFoundException.builder().message("No se encuentra la orden con id=" + id).build();
+			throw NotFoundException.builder().message("No se encuentra la orden con numero de orden=" + numeroOrden).build();
 		}
 		return o.get();
 		
@@ -90,20 +95,35 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 	@Override
 	public Orden update(Orden orden) throws FoundException, NotFoundException, BusinessException {
-		load(orden.getId());
+		if (orden.getNumeroOrden() == null) {
+			throw NotFoundException.builder().message("El numero de orden es obligatorio").build();
+		}
+
+		// 1) buscamos la orden existente (lanza NotFoundException si no está)
+		Orden existente = load(orden.getNumeroOrden());
+
+		// 2) forzamos el id de BD en el objeto recibido para que save() haga update
+		orden.setId(existente.getId());
+
 		try {
 			return ordenRepository.save(orden);
-		}catch(Exception e) {
-			log.error(e.getMessage(),e);
-			throw BusinessException.builder().message("Error al Actualizar Orden").build();
+		} catch (org.springframework.dao.DataIntegrityViolationException dive) {
+			// por si la DB rechaza unique (condición de carrera u otra violación)
+			log.warn("Violación integridad al actualizar orden numeroOrden={}: {}", orden.getNumeroOrden(),
+					dive.getMessage());
+			throw FoundException.builder().message("Ya existe una orden con numeroOrden=" + orden.getNumeroOrden())
+					.ex(dive).build();
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().message("Error al Actualizar Orden").ex(e).build();
 		}
 	}
 
 	@Override
-	public void delete(long id) throws NotFoundException, BusinessException {
-		load(id);
+	public void delete(Integer numeroOrden) throws NotFoundException, BusinessException {
+		Orden orden = load(numeroOrden);
 		try {
-			ordenRepository.deleteById(id);
+			ordenRepository.delete(orden);
 		}catch(Exception e) {
 			log.error(e.getMessage(), e);
             throw BusinessException.builder().ex(e).build();
@@ -113,16 +133,21 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 	@Override
 	public Orden add(Orden orden) throws FoundException, BusinessException {
-		try {
-			load(orden.getId());
-			throw FoundException.builder().message("Se encuentró la orden id=" + orden.getId()).build();	
-		}catch(NotFoundException e) {
+		
+		if(orden.getNumeroOrden() != null) {
 			
-		}
-		if (orden.getPesoFinal() == null) {
-    	orden.setPesoFinal(0.0);
-		}
+		
+			try {
+				load(orden.getNumeroOrden());
+				throw FoundException.builder().message("Se encuentró el numero de orden =" + orden.getNumeroOrden()).build();
+			}catch(NotFoundException e) {
+			
+			}
+			if (orden.getPesoFinal() == null) {
+    			orden.setPesoFinal(0.0);
+			}
 
+		}
 		try {
 			return ordenRepository.save(orden);
 		}catch(Exception e) {
@@ -197,7 +222,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		try {
 			Orden actualizada = ordenRepository.save(orden);
 			log.info("Orden {} actualizada a estado {} con password {}", 
-					actualizada.getId(), actualizada.getEstadoOrden(), actualizada.getPassword());
+					actualizada.getNumeroOrden(), actualizada.getEstadoOrden(), actualizada.getPassword());
 			return actualizada;
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
@@ -210,24 +235,26 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 	//PUNTO4
 	@Override
-	public Orden cerrarOrden(Long orderId) throws BusinessException, NotFoundException, FoundException {
+	public Orden cerrarOrden(Integer numeroOrden) throws BusinessException, NotFoundException, FoundException {
 		
 		Optional<Orden> ordenEncontrada;
 		
 		try {
-			ordenEncontrada = ordenRepository.findById(orderId);
+			ordenEncontrada = ordenRepository.findByNumeroOrden(numeroOrden);
 		}catch(Exception e) {
 			log.error(e.getMessage(), e);
             throw new BusinessException("Error al encontrar la orden por ID", e);
 		} if (ordenEncontrada.isEmpty()) {
             throw new NotFoundException("No se ha encontrado la orden");
         }
-		
-		if(ordenEncontrada.get().getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+
+		Orden orden = ordenEncontrada.get();
+
+		if(orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
 			throw new BusinessException("Error al cambiar el estado de orden. Es necesario que se encuentre en CON_PESAJE_INICIAL");
 		}
 		
-		List<DetalleCarga> detalles = detalleCargaRepository.findByOrdenId(orderId);
+		List<DetalleCarga> detalles = detalleCargaRepository.findByOrdenId(orden.getId());
 
 		if (detalles.isEmpty()) {
 			throw new BusinessException("No se pueden cerrar órdenes sin datos de carga.");
@@ -243,40 +270,25 @@ public class OrdenBusiness implements IOrdenBusiness {
 			promedioCaudal += detalle.getCaudal();
 		}
 
-		ordenEncontrada.get().setPromedioDensidad(promedioDensidad / detalles.size());
-		ordenEncontrada.get().setPromedioTemperatura(promedioTemperatura / detalles.size());
-		ordenEncontrada.get().setPromedioCaudal(promedioCaudal / detalles.size());
+		orden.setPromedioDensidad(promedioDensidad / detalles.size());
+		orden.setPromedioTemperatura(promedioTemperatura / detalles.size());
+		orden.setPromedioCaudal(promedioCaudal / detalles.size());
 
-		ordenEncontrada.get().setUltimaFechaInformacion(new java.util.Date());
-		ordenEncontrada.get().setFechaCierreCarga(new java.util.Date());
-		ordenEncontrada.get().setPesoFinal(ordenEncontrada.get().getUltimaMasaAcumulada());
-		ordenEncontrada.get().setEstadoOrden(EstadoOrden.CERRADA_PARA_CARGA);
-		ordenEncontrada.get().setPassword(null); // le sacamos la contrasenia.
-		this.update(ordenEncontrada.get());
-		return ordenEncontrada.get();
+		orden.setUltimaFechaInformacion(new java.util.Date());
+		orden.setFechaCierreCarga(new java.util.Date());
+		orden.setPesoFinal(orden.getUltimaMasaAcumulada());
+		orden.setEstadoOrden(EstadoOrden.CERRADA_PARA_CARGA);
+		orden.setPassword(null); // le sacamos la contrasenia.
+		this.update(orden);
+		return orden;
 	}
     
 	// PUNTO 3)
 	@Override
-	public Orden recibirDatosCarga(DatosCargaDTO datos)
-	        throws BusinessException, NotFoundException {
+	public Orden recibirDatosCarga(DatosCargaDTO datos) throws BusinessException, NotFoundException {
 	
-	    Optional<Orden> ordenEncontrada;
+		Orden orden = load(datos.getOrderId());
 	
-	    try {
-	        ordenEncontrada = ordenRepository.findById(datos.getOrderId());
-	    } catch (Exception e) {
-	        log.error(e.getMessage(), e);
-	        throw BusinessException.builder().message("Error al recuperar la orden").ex(e).build();
-	    }
-	
-	    if (ordenEncontrada.isEmpty()) {
-	        throw NotFoundException.builder()
-	                .message("No se encontró la orden con id=" + datos.getOrderId())
-	                .build();
-	    }
-	
-	    Orden orden = ordenEncontrada.get();
 	
 	    // Verificar estado
 	    if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
@@ -303,7 +315,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 	    //  Si es el primer dato de carga, registrar fecha de inicio
 	    if (orden.getFechaInicioCarga() == null) {
 	        orden.setFechaInicioCarga(new java.util.Date());
-	        log.info("Orden {} - Fecha de inicio de carga registrada: {}", datos.getOrderId(), orden.getFechaInicioCarga());
+	        log.info("Orden {} - Fecha de inicio de carga registrada: {}", orden.getNumeroOrden(), orden.getFechaInicioCarga());
 	    }
 	
 	    // Actualizar datos en cabecera

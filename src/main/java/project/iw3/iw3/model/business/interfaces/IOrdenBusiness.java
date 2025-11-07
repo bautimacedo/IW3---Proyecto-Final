@@ -10,12 +10,12 @@ public interface IOrdenBusiness {
 	
 	public List<Orden> list() throws BusinessException;
 	
-	public Orden load(long id) throws NotFoundException, BusinessException; //carga de orden por id
+	public Orden load(Integer numeroOrden) throws NotFoundException, BusinessException; //carga de orden por numero de orden
 	
 	
 	public Orden update(Orden orden) throws FoundException,NotFoundException,BusinessException; //Actualizar
 	
-	public void delete(long id) throws NotFoundException, BusinessException; //eliminar por id
+	public void delete(Integer numeroOrden) throws NotFoundException, BusinessException; //eliminar por numero de orden
 	
 	public Orden add(Orden orden) throws FoundException, BusinessException; //agregar una orden
 	
@@ -26,7 +26,7 @@ public interface IOrdenBusiness {
 	public Orden registrarPesoInicial (String patente, float tara) throws BusinessException, NotFoundException, FoundException;
 
 	//punto4
-	public Orden cerrarOrden(Long orderId) throws BusinessException, NotFoundException, FoundException; 
+	public Orden cerrarOrden(Integer numeroOrden) throws BusinessException, NotFoundException, FoundException; 
 
   	public Orden recibirDatosCarga(DatosCargaDTO datos)throws BusinessException, NotFoundException;
 
