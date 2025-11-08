@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
+import project.iw3.iw3.model.ConciliacionDTO;
 import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.DetalleCarga;
 import project.iw3.iw3.model.Orden;
@@ -348,8 +349,166 @@ public class OrdenBusiness implements IOrdenBusiness {
 	    
 	}
 
+	// PUNTO 5
 
+	public ConciliacionDTO registrarPesajeFinal(Integer numeroOrden, Double pesoFinal) throws BusinessException, NotFoundException {
 
+		if(numeroOrden == null || pesoFinal == null) {
+			throw BusinessException.builder().message("El numero de orden y el peso final son obligatorios").build();
+		}
+
+		Optional<Orden> o;
+		try {
+			o = ordenRepository.findByNumeroOrden(numeroOrden);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().ex(e).message(e.getMessage()).build();
+		}
+
+		if (o.isEmpty()) {
+			throw NotFoundException.builder().message("No se encuentra la orden con numeroOrden=" + numeroOrden).build();
+		}
+
+		Orden orden = o.get();
+		// validar estado: requerimos que la carga ya este cerrada (punto 4)
+		if(orden.getEstadoOrden() != EstadoOrden.CERRADA_PARA_CARGA) {
+			throw BusinessException.builder().message("La orden debe estar en estado CERRADA_PARA_CARGA").build();
+		}
+
+		// Calculamos: tara, producto cargado, promedios
+
+		Double tara = (orden.getTara() != null) ? orden.getTara().doubleValue() : null;
+		Double productoCargado = orden.getUltimaMasaAcumulada();
+
+		// Obtenemos promedios desde detalle de carga
+		List<DetalleCarga> detalles;
+		try {
+			detalles = detalleCargaRepository.findByOrdenId(orden.getId());
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().ex(e).message("Error al obtener detalles de carga").build();
+		}
+
+		double promedioTemp = orden.getPromedioTemperatura() != null ? orden.getPromedioTemperatura() : 0.0;
+		double promedioDens = orden.getPromedioDensidad() != null ? orden.getPromedioDensidad() : 0.0;
+		double promedioCaudal = orden.getPromedioCaudal() != null ? orden.getPromedioCaudal() : 0.0;
+
+		if(!detalles.isEmpty()) {
+			double sumTemp = 0.0, sumDens = 0.0, sumCaudal = 0.0;
+			for (DetalleCarga det : detalles) {
+				sumTemp += det.getTemperatura() != null ? det.getTemperatura() : 0.0;
+				sumDens += det.getDensidad() != null ? det.getDensidad() : 0.0;
+				sumCaudal += det.getCaudal() != null ? det.getCaudal() : 0.0;
+			}
+			int n = detalles.size();
+			promedioTemp = sumTemp / n;
+			promedioDens = sumDens / n;
+			promedioCaudal = sumCaudal / n;
+		}
+
+		// Si no hay tara o producto cargado, devolvemos nulls coherentes
+		Double netoPorBalanza = null;
+		Double diferencia = null;
+		
+		if(tara != null) {
+			netoPorBalanza = pesoFinal - tara;
+			if(productoCargado != null) {
+				diferencia = netoPorBalanza - productoCargado;
+			}
+		}
+
+		// presistir cambios en la orden
+		orden.setPesoFinal(pesoFinal);
+		// cambiamos estado a Finalizada
+		orden.setEstadoOrden(EstadoOrden.FINALIZADA);
+		orden.setFechaPesajeTara(orden.getFechaPesajeTara()); // mantenemos la fecha del pesaje inicial
+		// si queremos agregar la fecha de pesaje final, agregamos el campo fechaPesajeFinal en entidad y aca lo seteamos
+
+		try {
+			ordenRepository.save(orden);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().ex(e).message("Error al actualizar orden con pesaje final").build();
+		}
+
+		ConciliacionDTO dto = new ConciliacionDTO();
+		dto.setNumeroOrden(orden.getNumeroOrden());
+		dto.setTara(tara);
+		dto.setPesoFinal(pesoFinal);
+		dto.setProductoCargado(productoCargado);
+		dto.setNetoPorBalanza(netoPorBalanza);
+		dto.setDiferencia(diferencia);
+		dto.setPromedioTemperatura(promedioTemp);
+		dto.setPromedioDensidad(promedioDens);
+		dto.setPromedioCaudal(promedioCaudal);
+		dto.setFechaPesajeFinal(new java.util.Date());
+
+		return dto;
+	}
+
+	// Punto 5: Devuelve la conciliacion para una orden que este en estado FINALIZADA
+	@Override
+	public ConciliacionDTO getConciliacion(Integer numeroOrden) throws NotFoundException, BusinessException {
+		if(numeroOrden == null) {
+			throw BusinessException.builder().message("El numero de orden es obligatorio").build();
+		}
+
+		Optional<Orden> o;
+		try {
+			o = ordenRepository.findByNumeroOrden(numeroOrden);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().ex(e).build();
+		}
+
+		if(o.isEmpty()) {
+			throw NotFoundException.builder().message("No se encuentra la orden con numeroOrden=" + numeroOrden).build();
+		}
+
+		Orden orden = o.get();
+
+		// validar estado finalizada
+		if(orden.getEstadoOrden() != EstadoOrden.FINALIZADA) {
+			throw BusinessException.builder().message("La orden debe estar en estado FINALIZADA").build();
+		}
+
+		// Reutilizamos la lógica de cálculo de conciliación del punto 5
+
+		Double tara = orden.getTara() != null ? orden.getTara().doubleValue() : null;
+		Double pesoFinal = orden.getPesoFinal();
+		Double productoCargado = orden.getUltimaMasaAcumulada();
+		List<DetalleCarga> detalles = detalleCargaRepository.findByOrdenId(orden.getId());
+
+		double promedioTemp = orden.getPromedioTemperatura() != null ? orden.getPromedioTemperatura() : 0.0;
+		double promedioDens = orden.getPromedioDensidad() != null ? orden.getPromedioDensidad() : 0.0;
+		double promedioCaudal = orden.getPromedioCaudal() != null ? orden.getPromedioCaudal() : 0.0;
+		if (!detalles.isEmpty()) {
+			double sumTemp = 0.0, sumDens = 0.0, sumCaudal = 0.0;
+			for (DetalleCarga det : detalles) {
+				sumTemp += det.getTemperatura() != null ? det.getTemperatura() : 0.0;
+				sumDens += det.getDensidad() != null ? det.getDensidad() : 0.0;
+				sumCaudal += det.getCaudal() != null ? det.getCaudal() : 0.0;
+			}
+			int n = detalles.size();
+			promedioTemp = sumTemp / n;
+			promedioDens = sumDens / n;
+			promedioCaudal = sumCaudal / n;
+		}
+
+		Double netoPorBalanza = null;
+		Double diferencia = null;
+		if (tara != null && pesoFinal != null) {
+			netoPorBalanza = pesoFinal - tara;
+			if (productoCargado != null) {
+				diferencia = netoPorBalanza - productoCargado;
+			}
+		}
+
+		ConciliacionDTO dto = new ConciliacionDTO(numeroOrden, tara, pesoFinal, productoCargado,
+				netoPorBalanza, diferencia, promedioTemp, promedioDens, promedioCaudal, null);
+		
+		return dto;
+	}
 
 	@Override
 	public Orden loadByNumeroOrden(Integer numeroOrden) throws NotFoundException, BusinessException {

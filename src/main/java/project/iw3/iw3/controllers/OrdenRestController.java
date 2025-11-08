@@ -123,8 +123,50 @@ public class OrdenRestController extends BaseRestController {
 	    }
 	}
 
-
+	// PUNTO 5) - Conciliacion de orden
+	@PostMapping(value = "pesaje-final", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> registrarPesajeFinal(@RequestParam Integer numeroOrden, @RequestParam Double pesoFinal) {
+		try {
+			return new ResponseEntity<>(ordenBusiness.registrarPesajeFinal(numeroOrden, pesoFinal), HttpStatus.OK);
+		} catch (NotFoundException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+		} catch (BusinessException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+		} catch (Exception e) {
+			log.error("Error interno al registrar pesaje final", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+		}
+	}
 	
+	// PUNTO 5 - Obtener conciliacion GET
 
+	@GetMapping(value = "/conciliacion", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> getConciliacion(@RequestParam Integer numeroOrden) {
 
+		try{
+			return new ResponseEntity<>(ordenBusiness.getConciliacion(numeroOrden), HttpStatus.OK);
+		} catch (NotFoundException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+		} catch (BusinessException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+		} catch (Exception e) {
+			log.error("Error interno al obtener conciliacion", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+		}
+
+	}
+
+	// Extra: buscar por orden especifica
+
+	@GetMapping(value = "/by-number", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> getByNumeroOrden(@RequestParam("numeroOrden") Integer numeroOrden) {
+		try {
+			Orden orden = ordenBusiness.loadByNumeroOrden(numeroOrden);
+			return new ResponseEntity<>(orden, HttpStatus.OK);
+		} catch (NotFoundException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+		} catch (BusinessException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+		}
+	}
 }
