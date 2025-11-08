@@ -2,6 +2,7 @@ package project.iw3.iw3.model.business;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -281,9 +282,16 @@ public class OrdenBusiness implements IOrdenBusiness {
 	@Override
 	public Orden recibirDatosCarga(DatosCargaDTO datos) throws BusinessException, NotFoundException {
 	
-		Orden orden = load(datos.getOrderId());
+		Orden orden = loadByNumeroOrden(datos.getNumeroOrden());
+		
+
 	
-	
+		if (datos.getPassword() == null || !Objects.equals(orden.getPassword(), datos.getPassword())) {
+			throw BusinessException.builder()
+            .message("Error en la contraseña. Deben coincidir")
+            .build();
+		}
+		
 	    // Verificar estado
 	    if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
 	        throw BusinessException.builder()
@@ -416,6 +424,9 @@ public class OrdenBusiness implements IOrdenBusiness {
 		orden.setEstadoOrden(EstadoOrden.FINALIZADA);
 		orden.setFechaPesajeTara(orden.getFechaPesajeTara()); // mantenemos la fecha del pesaje inicial
 		orden.setFechaCierreDeOrden(new java.util.Date());
+		orden.setPromedioCaudal(promedioCaudal);
+		orden.setPromedioDensidad(promedioDens);
+		orden.setPromedioTemperatura(promedioTemp);
 
 		try {
 			this.update(orden);
