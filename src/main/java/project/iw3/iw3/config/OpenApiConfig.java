@@ -22,7 +22,7 @@ public class OpenApiConfig {
 	                       .contact(new Contact()
 	                               .name("GARIBALDI - MACEDO - RODEYRO")
 	                               .url("")
-	                               .email("https://github.com/BrunoGaribaldi"))
+	                               .email("bgaribaldi709@alumnos.iua.edu.ar"))
 	                       .termsOfService("TOC")
 	                       .license(new License().name("License").url("#"))
 	               );

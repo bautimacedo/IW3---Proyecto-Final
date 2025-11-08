@@ -70,9 +70,6 @@ public class OrdenBusiness implements IOrdenBusiness {
         }
 	}
 
-
-
-
 	@Override
 	public Orden load(Integer numeroOrden) throws NotFoundException, BusinessException { //cargar una orden por numero de orden
 		
@@ -157,9 +154,24 @@ public class OrdenBusiness implements IOrdenBusiness {
 		}
 	}
 	
+	@Override
+	public Orden loadByNumeroOrden(Integer numeroOrden) throws NotFoundException, BusinessException {
+		Optional<Orden> o;
+		try {
+			o = ordenRepository.findByNumeroOrden(numeroOrden);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().ex(e).message(e.getMessage()).build();
+		}
+		if (o.isEmpty()) {
+			throw NotFoundException.builder()
+					.message("No se encuentra la orden con numeroOrden=" + numeroOrden)
+					.build();
+		}
+		return o.get();
+	}
 	
-
-	
+	//PUNTO 1
 	//con esto transormamos un json en una orden ya lista. Esto es el punto 1).
 	@Override
 	public Orden addExternal(String json) throws FoundException, BusinessException {
@@ -256,33 +268,13 @@ public class OrdenBusiness implements IOrdenBusiness {
 			throw new BusinessException("Error al cambiar el estado de orden. Es necesario que se encuentre en CON_PESAJE_INICIAL");
 		}
 		
-		List<DetalleCarga> detalles = detalleCargaRepository.findByOrdenId(orden.getId());
-
-		if (detalles.isEmpty()) {
-			throw new BusinessException("No se pueden cerrar órdenes sin datos de carga.");
-		}
-
-		double promedioDensidad = 0;
-		double promedioTemperatura = 0;
-		double promedioCaudal = 0;
-
-		for (DetalleCarga detalle : detalles) {
-			promedioDensidad += detalle.getDensidad();
-			promedioTemperatura += detalle.getTemperatura();
-			promedioCaudal += detalle.getCaudal();
-		}
-
-		orden.setPromedioDensidad(promedioDensidad / detalles.size());
-		orden.setPromedioTemperatura(promedioTemperatura / detalles.size());
-		orden.setPromedioCaudal(promedioCaudal / detalles.size());
-
-		orden.setUltimaFechaInformacion(new java.util.Date());
-		orden.setFechaCierreCarga(new java.util.Date());
-		orden.setPesoFinal(orden.getUltimaMasaAcumulada());
 		orden.setEstadoOrden(EstadoOrden.CERRADA_PARA_CARGA);
 		orden.setPassword(null); // le sacamos la contrasenia.
+		orden.setFechaCierreCarga(new java.util.Date());
+		orden.setUltimaFechaInformacion(new java.util.Date());
 		this.update(orden);
 		return orden;
+		
 	}
     
 	// PUNTO 3)
@@ -370,6 +362,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		}
 
 		Orden orden = o.get();
+		
 		// validar estado: requerimos que la carga ya este cerrada (punto 4)
 		if(orden.getEstadoOrden() != EstadoOrden.CERRADA_PARA_CARGA) {
 			throw BusinessException.builder().message("La orden debe estar en estado CERRADA_PARA_CARGA").build();
@@ -422,10 +415,11 @@ public class OrdenBusiness implements IOrdenBusiness {
 		// cambiamos estado a Finalizada
 		orden.setEstadoOrden(EstadoOrden.FINALIZADA);
 		orden.setFechaPesajeTara(orden.getFechaPesajeTara()); // mantenemos la fecha del pesaje inicial
-		// si queremos agregar la fecha de pesaje final, agregamos el campo fechaPesajeFinal en entidad y aca lo seteamos
+		orden.setFechaCierreDeOrden(new java.util.Date());
 
 		try {
-			ordenRepository.save(orden);
+			this.update(orden);
+			//ordenRepository.save(orden);
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 			throw BusinessException.builder().ex(e).message("Error al actualizar orden con pesaje final").build();
@@ -510,22 +504,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		return dto;
 	}
 
-	@Override
-	public Orden loadByNumeroOrden(Integer numeroOrden) throws NotFoundException, BusinessException {
-		Optional<Orden> o;
-		try {
-			o = ordenRepository.findByNumeroOrden(numeroOrden);
-		} catch (Exception e) {
-			log.error(e.getMessage(), e);
-			throw BusinessException.builder().ex(e).message(e.getMessage()).build();
-		}
-		if (o.isEmpty()) {
-			throw NotFoundException.builder()
-					.message("No se encuentra la orden con numeroOrden=" + numeroOrden)
-					.build();
-		}
-		return o.get();
-	}
+
 
 
 

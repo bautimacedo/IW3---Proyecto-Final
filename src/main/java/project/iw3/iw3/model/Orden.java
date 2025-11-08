@@ -76,6 +76,9 @@ public class Orden {
     @Column(nullable = true)
     private Date fechaCierreCarga; // punto 4) la fecha en la que no se puede cargar mas carga, cambio de estado.
     
+    @Column(nullable = true)
+    private Date fechaCierreDeOrden; // punto 5)
+    
     
     @Column(nullable = true)
     private Double promedioDensidad;
