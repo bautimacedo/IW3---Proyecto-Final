@@ -3,6 +3,9 @@ package project.iw3.iw3.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import lombok.extern.slf4j.Slf4j;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -72,37 +75,42 @@ public class OrdenRestController extends BaseRestController {
     
     // PUNTO 2)
     @PostMapping(value = "/pesaje-inicial", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<?> registerInitialWeighing(
-            @RequestHeader("Patente") String patente,
-            @RequestHeader("Tara") float tara) {
-    	
-    	try {
-    		Orden orden = ordenBusiness.registrarPesoInicial(patente, tara);
+    public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
+
+        try {
+            String patente = body.get("patente").asText();
+            float tara = (float) body.get("tara").asDouble();
+
+            Orden orden = ordenBusiness.registrarPesoInicial(patente, tara);
+
             HttpHeaders responseHeaders = new HttpHeaders();
             responseHeaders.set("Order-Id", String.valueOf(orden.getNumeroOrden()));
+
             return new ResponseEntity<>(orden.getPassword().toString(), responseHeaders, HttpStatus.OK);
-    	} catch (Exception e) {
-    		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
-    	}
-    	
-        
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+        }
     }
     
     
     //PUNTO 4)
     @PostMapping("/cerrar-carga")
-    public ResponseEntity<?> closeOrder(@RequestHeader("NumeroOrden") Integer numeroOrden) {
-    	
-    	
-    	try{
-    		Orden orden = ordenBusiness.cerrarOrden(numeroOrden);
+    public ResponseEntity<?> closeOrder(@RequestBody JsonNode body) {
+
+        try {
+            Integer numeroOrden = body.get("numeroOrden").asInt();
+
+            Orden orden = ordenBusiness.cerrarOrden(numeroOrden);
+
             HttpHeaders responseHeaders = new HttpHeaders();
             responseHeaders.set("Order-Number", String.valueOf(orden.getNumeroOrden()));
-            return new ResponseEntity<>(responseHeaders, HttpStatus.OK);
-    	}catch (Exception e) {
-    		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
-    	}
-        
+
+            return new ResponseEntity<>("Orden cerrada correctamente", responseHeaders, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+        }
     }
 
     // PUNTO 3) - Recibir datos de carga desde JSON
@@ -125,18 +133,23 @@ public class OrdenRestController extends BaseRestController {
 
 	// PUNTO 5) - Conciliacion de orden
 	@PostMapping(value = "pesaje-final", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> registrarPesajeFinal(@RequestParam Integer numeroOrden, @RequestParam Double pesoFinal) {
-		try {
-			return new ResponseEntity<>(ordenBusiness.registrarPesajeFinal(numeroOrden, pesoFinal), HttpStatus.OK);
-		} catch (NotFoundException e) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-		} catch (BusinessException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-		} catch (Exception e) {
-			log.error("Error interno al registrar pesaje final", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
-		}
-	}
+	public ResponseEntity<?> registrarPesajeFinal(@RequestBody JsonNode body) {
+        try {
+            Integer numeroOrden = body.get("numeroOrden").asInt();
+            Double pesoFinal = body.get("pesoFinal").asDouble();
+
+            var resultado = ordenBusiness.registrarPesajeFinal(numeroOrden, pesoFinal);
+            return ResponseEntity.ok(resultado);
+
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (BusinessException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error interno al registrar pesaje final", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
+        }
+    }
 	
 	// PUNTO 5 - Obtener conciliacion GET
 
