@@ -1,6 +1,5 @@
 package project.iw3.iw3.model;
 
-import java.util.Date;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
