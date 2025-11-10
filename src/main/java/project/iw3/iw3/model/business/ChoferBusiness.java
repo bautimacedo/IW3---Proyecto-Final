@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import io.micrometer.common.lang.Nullable;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import project.iw3.iw3.model.Chofer;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
@@ -44,6 +46,51 @@ public class ChoferBusiness implements IChoferBusiness {
         throw BusinessException.builder().ex(e).build();
        }
     }
+    
+    
+    
+	
+	//objetivo --> crear o buscar un chofer
+	@Override
+	@Transactional //asegura que la operacion se haga en una transaccion de bd.
+	
+	public Chofer loadOrCreate(String dni, @Nullable String nombre, @Nullable String apellido) throws BusinessException {
+		    // 1) Validacion basica
+		
+		    if (dni == null || dni.isBlank()) {
+		        throw new BusinessException("Chofer: 'dni' es obligatorio.");
+		    }
+		
+		    final String doc = dni.trim(); //no creo que haga falta pero por las dudas.
+		
+		    // 2) Intentamos buscar el chofer por dni
+		    
+		    Optional<Chofer> found = choferDAO.findByDni(doc); //Recordemos que el resultado de la bd se envuelve en un objeto optional.
+		    // el proposito general es eliminar el riesgo de nullpointerexception.si no se encuentra el chofer, entonces optional estara vacio simplemente.
+		    //optional.isPresent es verdadero si contiene un objeto.
+		    
+		    if (found.isPresent()) {
+		        log.debug("Chofer existente recuperado: {}", found.get().getDni());
+		        return found.get();
+		    }
+		
+		    // 3) Si no existe, creamos uno nuevo
+		    try {
+		        Chofer nuevo = new Chofer();
+		        nuevo.setDni(doc);
+		        nuevo.setNombre(nombre != null ? nombre.trim() : "SIN_NOMBRE");
+		        nuevo.setApellido(apellido != null ? apellido.trim() : "SIN_APELLIDO");
+		
+		        Chofer saved = choferDAO.save(nuevo);
+		        log.info("Chofer creado: dni={}", saved.getDni());
+		        return saved;
+		
+		    } catch (Exception e) {
+		        log.error("Error creando chofer {}: {}", doc, e.getMessage(), e);
+		        throw new BusinessException("Error creando chofer: " + e.getMessage(), e);
+		    }
+	}
+
 
     @Override
     public Chofer load(long id) throws NotFoundException, BusinessException {
@@ -74,7 +121,9 @@ public class ChoferBusiness implements IChoferBusiness {
         }
         return r.get();
     }
-
+    
+	
+	
     @Override
     public List<Chofer> list() throws BusinessException {
         try {
@@ -121,5 +170,7 @@ public class ChoferBusiness implements IChoferBusiness {
             throw BusinessException.builder().ex(e).build();
         }
     }
+
+
     
 }

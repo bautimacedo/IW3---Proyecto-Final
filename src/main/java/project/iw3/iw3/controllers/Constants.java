@@ -9,6 +9,7 @@ public final class Constants {
 	public static final String URL_CISTERNAS = URL_BASE + "/cisternas";
 	public static final String URL_CAMIONES = URL_BASE + "/camiones";
 	public static final String URL_CHOFERES = URL_BASE + "/choferes";
+	public static final String URL_ORDEN = URL_BASE + "/orden";
 
 
 	public static final String URL_INTEGRATION = URL_BASE + "/integration";

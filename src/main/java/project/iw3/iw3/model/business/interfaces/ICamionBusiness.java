@@ -2,6 +2,9 @@ package project.iw3.iw3.model.business.interfaces;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import io.micrometer.common.lang.Nullable;
 import project.iw3.iw3.model.Camion;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
@@ -20,5 +23,8 @@ public interface ICamionBusiness {
     Camion update(Camion camion) throws FoundException, NotFoundException, BusinessException;
 
     void delete(long id) throws NotFoundException, BusinessException;
+    
+    public Camion loadOrCreate(String patente, @Nullable String descripcion, @Nullable JsonNode cisternasNode) throws BusinessException;
+    
     
 }

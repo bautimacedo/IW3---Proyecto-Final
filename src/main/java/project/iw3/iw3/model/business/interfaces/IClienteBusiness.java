@@ -2,6 +2,8 @@ package project.iw3.iw3.model.business.interfaces;
 
 import project.iw3.iw3.model.business.exceptions.*;
 import java.util.List;
+
+import io.micrometer.common.lang.Nullable;
 import project.iw3.iw3.model.Cliente;
 
 public interface IClienteBusiness {  
@@ -16,4 +18,6 @@ public interface IClienteBusiness {
     public Cliente update(Cliente cliente) throws FoundException,NotFoundException,BusinessException; //Actualizar
 
     public void delete(long id) throws NotFoundException, BusinessException;
+    
+    public Cliente loadOrCreate(String nombreEmpresa, @Nullable String email) throws BusinessException;
 }
