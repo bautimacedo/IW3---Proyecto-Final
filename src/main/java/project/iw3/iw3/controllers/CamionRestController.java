@@ -270,33 +270,85 @@ public class CamionRestController {
         }
     }
 
-    // actualizar caminn
-    @Operation(summary = "Actualizar un camión existente")
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> update(@RequestBody Camion camion) {
-        try {
-            camionBusiness.update(camion);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(
-                standartResponseBusiness.build(HttpStatus.NOT_FOUND, e, e.getMessage()),
-                HttpStatus.NOT_FOUND
-            );
-        } catch (FoundException e) {
-            return new ResponseEntity<>(
-                standartResponseBusiness.build(HttpStatus.CONFLICT, e, e.getMessage()),
-                HttpStatus.CONFLICT
-            );
-        } catch (BusinessException e) {
-            return new ResponseEntity<>(
-                standartResponseBusiness.build(HttpStatus.INTERNAL_SERVER_ERROR, e, e.getMessage()),
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+    // actualizar camion
+@Operation(
+    summary = "Actualizar un camion existente",
+    description = "Permite actualizar los datos de un camion que ya esta registrado en la base de datos.",
+    requestBody = @RequestBody(
+        description = "Objeto camion con los datos actualizados. Debe incluir el ID del camion existente.",
+        required = true,
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = Camion.class),
+            examples = {
+                @ExampleObject(
+                    name = "Ejemplo",
+                    value = """
+                    {
+                        "id": 1,
+                        "patente": "IAK-829",
+                        "descripcion": "Mercedez Benz 2024",
+                        "cisterna": [
+                            {
+                                "id": 1,
+                                "capacidadLitros": 123456,
+                                "licencia": "ABC123"
+                            }
+                        ]
+                    }
+                    """
+                )
+            }
+        )
+    )
+)
+@ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Camion actualizado con exito"),
+    @ApiResponse(responseCode = "404", description = "Camion no encontrado en la base de datos"),
+    @ApiResponse(responseCode = "409", description = "Error por patente duplicada"),
+    @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+})
+@PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+public ResponseEntity<?> update(@RequestBody Camion camion) {
+    try {
+        camionBusiness.update(camion);
+        return new ResponseEntity<>(HttpStatus.OK);
+    } catch (NotFoundException e) {
+        return new ResponseEntity<>(
+            standartResponseBusiness.build(HttpStatus.NOT_FOUND, e, e.getMessage()),
+            HttpStatus.NOT_FOUND
+        );
+    } catch (FoundException e) {
+        return new ResponseEntity<>(
+            standartResponseBusiness.build(HttpStatus.CONFLICT, e, e.getMessage()),
+            HttpStatus.CONFLICT
+        );
+    } catch (BusinessException e) {
+        return new ResponseEntity<>(
+            standartResponseBusiness.build(HttpStatus.INTERNAL_SERVER_ERROR, e, e.getMessage()),
+            HttpStatus.INTERNAL_SERVER_ERROR
+        );
     }
+}
+
 
     // eliminar camion
-    @Operation(summary = "Eliminar un camión por ID")
+    @Operation(
+        summary = "Eliminar un camion por ID",
+        description = "Elimina un camion registrado en la base de datos utilizando su identificador unico."
+    )
+    @Parameter(
+        in = ParameterIn.PATH,
+        name = "id",
+        required = true,
+        schema = @Schema(type = "long"),
+        description = "Identificador del camion a eliminar. Ejemplo: 3"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Camion eliminado con exito"),
+        @ApiResponse(responseCode = "404", description = "Camion no encontrado en la base de datos"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @DeleteMapping(value = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
         try {
@@ -313,5 +365,5 @@ public class CamionRestController {
                 HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
-    }
+}
 }
