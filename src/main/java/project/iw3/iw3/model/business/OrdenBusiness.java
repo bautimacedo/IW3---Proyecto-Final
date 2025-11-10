@@ -277,6 +277,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		return orden;
 		
 	}
+	
     
 	// PUNTO 3)
 	@Override
@@ -339,7 +340,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 	        detalleCargaRepository.save(detalle); //  inserta el registro histórico
 
-	        return ordenRepository.save(orden);
+	        return this.update(orden);
 	    } catch (Exception e) {
 	        log.error(e.getMessage(), e);
 	        throw BusinessException.builder()

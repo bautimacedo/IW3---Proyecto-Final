@@ -141,7 +141,7 @@ public class CamionBusiness implements ICamionBusiness {
     }
 
 	@Override
-	@Transactional
+	@Transactional 
 	public Camion loadOrCreate(String patente, @Nullable String descripcion, @Nullable JsonNode cisternasNode) throws BusinessException {
 		
 		    //1. Validar datos básicos

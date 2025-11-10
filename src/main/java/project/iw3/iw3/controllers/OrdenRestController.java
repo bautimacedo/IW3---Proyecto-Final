@@ -67,17 +67,17 @@ public class OrdenRestController extends BaseRestController {
                                     {
                                         "id": 5,
                                         "capacidadLitros": 35000,
-                                        "licencia": "BAUTIGAY"
+                                        "licencia": "ABC-123"
                                     },
                                     {
                                         "id": 4,
                                         "capacidadLitros": 35000,
-                                        "licencia": "RODILLA GAY"
+                                        "licencia": "DEF-456"
                                     },
                                     {
                                         "id": 6,
                                         "capacidadLitros": 35000,
-                                        "licencia": "BRUNO MACHO ALFA"
+                                        "licencia": "GHI-789"
                                     }
                                 ]
                             },
@@ -130,65 +130,88 @@ public ResponseEntity<?> list() {
 }
 
     
-   @Operation(
-    summary = "Registrar una nueva orden externa (B2B)",
-    description = """
-Permite registrar una nueva orden proveniente de un sistema externo.
-Se tiene que enviar un JSON con toda la informacion necesaria: camion, cisternas, chofer, cliente, producto y preset de carga.
-La orden se crea en estado inicial.
-"""
-)
-@ApiResponses({
-    @ApiResponse(
-        responseCode = "201",
-        description = "Orden creada correctamente",
-        content = @Content(
-            mediaType = "application/json",
-            examples = {
-                @ExampleObject(
-                    name = "Ejemplo de creacion de orden B2B",
-                    value = """
-                    {
-                        "order_number": 777,
-                        "truck": {
-                            "id": 1000,
-                            "licence_plate": "AB-OS",
-                            "description": "Renault",
-                            "tanks": [
-                                { "id": 1, "capacity": 35000, "licence_plate": "GMI-1234" }
-                            ]
-                        },
-                        "driver": {
-                            "id": 1,
-                            "name": "juan",
-                            "last_name": "gonzales",
-                            "document": "1234567"
-                        },
-                        "customer": {
-                            "id": 21,
-                            "business_name": "YPF",
-                            "email": "mail@mail"
-                        },
-                        "product": {
-                            "id": 1,
-                            "product": "Butano"
-                        },
-                        "preset": 18270
-                    }
-                    """
-                )
-            }
-        )
-    ),
-    @ApiResponse(responseCode = "400", description = "Error en los datos recibidos o formato invalido"),
-    @ApiResponse(responseCode = "409", description = "Error por numero de orden duplicado"),
-    @ApiResponse(responseCode = "500", description = "Error interno del servidor")
-})
+   @io.swagger.v3.oas.annotations.parameters.RequestBody(
+		    description = "Datos completos de la orden, incluyendo información anidada del camión, cisterna, chofer, cliente y producto. "
+		        + "Utiliza un deserializador flexible que acepta diferentes claves JSON para los mismos campos.",
+		    required = true,
+		    content = @Content(
+		        mediaType = "application/json",
+		        examples = {
+		            @ExampleObject(
+		                name = "Creación de Orden Externa",
+		                value = """
+		                {
+		                    "order_number": 777,
+		                    "truck": {
+		                        "id": 1000,
+		                        "licence_plate": "AB-OS",
+		                        "description": "Renault",
+		                        "tanks": [
+		                            { "id": 1, "capacity": 35000, "licence_plate": "GMI-1234" },
+		                            { "capacity": 15000, "licence_plate": "GMI-5678" }
+		                        ]
+		                    },
+		                    "driver": {
+		                        "id": 1,
+		                        "name": "juan",
+		                        "last_name": "gonzales",
+		                        "document": "1234567"
+		                    },
+		                    "customer": {
+		                        "id": 21,
+		                        "business_name": "YPF",
+		                        "email": "mail@mail"
+		                    },
+		                    "product": {
+		                        "id": 1,
+		                        "product": "Butano"
+		                    },
+		                    "preset": 18270.0
+		                }
+		                """
+		            )
+		        }
+		    )
+		)
+		@Operation(
+		    summary = "Crear una nueva orden desde un sistema externo ",
+		    description = "Este endpoint recibe la información completa de una orden de carga y la registra en el sistema. "
+		        + "Durante el proceso, se verifican las reglas de negocio, como la capacidad. "
+		        + "La orden se crea en estado **PENDIENTE_PESAJE_INICIAL**."
+		)
+		@ApiResponses({
+		    @ApiResponse(
+		        responseCode = "201",
+		        description = "Orden creada exitosamente. El ID de la nueva orden se devuelve en el encabezado `Location`.",
+		        headers = @io.swagger.v3.oas.annotations.headers.Header(
+		            name = HttpHeaders.LOCATION,
+		            description = "URL completa para acceder al recurso de la orden recién creada.",
+		            schema = @Schema(type = "string", example = "/api/v1/orden/777")
+		        )
+		    ),
+		    @ApiResponse(
+		        responseCode = "400",
+		        description = "Error de negocio (`BusinessException`). Por ejemplo: El 'preset' excede la capacidad total de las cisternas, patente de camión/cisterna faltante, o error de validación de datos.",
+		        content = @Content(mediaType = "application/json", examples = @ExampleObject(name = "Respuesta de Error", value = "{ \"status\": 400, \"error\": \"BusinessException\", \"message\": \"El preset excede la capacidad total.\" }"))
+		    ),
+		    @ApiResponse(
+		        responseCode = "409",
+		        description = "Conflicto (`FoundException`). El número de orden enviado ya se encuentra registrado en el sistema.",
+		        content = @Content(mediaType = "application/json", examples = @ExampleObject(name = "Respuesta de Conflicto", value = "{ \"status\": 409, \"error\": \"FoundException\", \"message\": \"El número de orden 777 ya existe.\" }"))
+		    ),
+		    @ApiResponse(
+		        responseCode = "500",
+		        description = "Error interno del servidor (`Exception`).",
+		        content = @Content(mediaType = "application/json", examples = @ExampleObject(name = "Respuesta de Error Interno", value = "{ \"status\": 500, \"error\": \"Exception\", \"message\": \"Error interno\" }"))
+		    )
+		})
 @PostMapping(
     value = "/b2b",
     consumes = MediaType.APPLICATION_JSON_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
 )
+   
+// PUNTO 1
 public ResponseEntity<?> addExternal(@RequestBody String body) {
     try {
         Orden response = ordenBusiness.addExternal(body);
@@ -262,6 +285,8 @@ public ResponseEntity<?> addExternal(@RequestBody String body) {
         )
     )
 )
+
+//PUNTO2
 @PostMapping(value = "/pesaje-inicial", produces = MediaType.TEXT_PLAIN_VALUE)
 public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 
@@ -281,7 +306,49 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
     }
 }
 
-    
+@Operation(
+	    summary = "Cerrar la orden de carga",
+	    description = "Este endpoint recibe el número de una orden y procede a marcarla como CERRADA_PARA_CARGA en el sistema. "
+	        + "Para ello debe pasar por body el numero de orden correspondiente y debe estar la orden como CON_PESAJE_INICIAL"
+	        + "Devuelve un mensaje de éxito en el cuerpo y el número de orden en el header."
+	)
+	@ApiResponses({
+	    @ApiResponse(
+	        responseCode = "200",
+	        description = "Orden cerrada correctamente. Devuelve un mensaje de confirmación en el cuerpo y el número de orden en el header 'Order-Number'.",
+	        content = @Content(
+	            mediaType = "text/plain",
+	            examples = {
+	                @ExampleObject(
+	                    name = "Respuesta exitosa",
+	                    value = "Orden cerrada correctamente"
+	                )
+	            }
+	        )
+	    ),
+	    @ApiResponse(
+	        responseCode = "400",
+	        description = "Error en los datos enviados, la orden no existe, o la orden ya estaba cerrada/finalizada."
+	    ),
+	    @ApiResponse(
+	        responseCode = "500",
+	        description = "Error interno del servidor durante el proceso de cierre."
+	    )
+	})
+@io.swagger.v3.oas.annotations.parameters.RequestBody(
+	    description = "Número de la orden que se desea cerrar.",
+	    required = true,
+	    content = @Content(
+	        mediaType = "application/json",
+	        schema = @Schema(
+	            example = """
+	            {
+	                "numeroOrden": 1024
+	            }
+	            """
+	        )
+	    )
+	)
     
     //PUNTO 4)
     @PostMapping("/cerrar-carga")
@@ -302,6 +369,59 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
         }
     }
 
+//1. Anotación de Swagger para describir el RequestBody
+@io.swagger.v3.oas.annotations.parameters.RequestBody(
+ description = "Datos técnicos de la carga. Requiere el número de orden y la contraseña generada previamente para la autorización.",
+ required = true,
+ content = @Content(
+     mediaType = "application/json",
+     schema = @Schema(implementation = DatosCargaDTO.class),
+     examples = {
+         @ExampleObject(
+             name = "Ejemplo de Datos de Carga",
+             value = """
+             {
+               "numeroOrden": 401,
+               "password": 79509,
+               "masa": 5900,
+               "densidad": 4,
+               "temperatura": 100,
+               "caudal": 100
+             }
+             """
+         )
+     }
+ )
+)
+//2. Anotación de Swagger para describir la Operación
+@Operation(
+ summary = "Registrar los datos de carga/descarga de una orden",
+ description = "Este endpoint recibe los datos técnicos de la carga (masa, densidad, temperatura y caudal) junto con el número de orden y la contraseña generada en el pesaje inicial. "
+     + "La orden debe existir y estar en estado 'CON_PESAJE_INICIAL'. La contraseña actúa como token de seguridad para autorizar la carga de datos."
+)
+//3. Anotación de Swagger para describir las Respuestas
+@ApiResponses({
+ @ApiResponse(
+     responseCode = "200",
+     description = "Datos de carga recibidos y registrados correctamente. Devuelve un mensaje de éxito y el número de orden en el header.",
+     content = @Content(mediaType = "text/plain", examples = {@ExampleObject(name = "Respuesta exitosa", value = "Datos recibidos correctamente")})
+ ),
+ @ApiResponse(
+     responseCode = "400",
+     description = "Error de negocio (`BusinessException`). Posibles causas: La contraseña es incorrecta, la orden no está en el estado 'CON_PESAJE_INICIAL', o hay un error de validación en los datos enviados.",
+     content = @Content(mediaType = "text/plain")
+ ),
+ @ApiResponse(
+     responseCode = "404",
+     description = "Orden no encontrada (`NotFoundException`). La orden con el número especificado no existe en el sistema.",
+     content = @Content(mediaType = "text/plain")
+ ),
+ @ApiResponse(
+     responseCode = "500",
+     description = "Error interno del servidor (`Exception`).",
+     content = @Content(mediaType = "text/plain")
+ )
+})
     // PUNTO 3) - Recibir datos de carga desde JSON
 	@PostMapping(value = "/datos-carga", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> receiveLoadData(@RequestBody DatosCargaDTO datos) {
@@ -319,6 +439,74 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
 	    }
 	}
+
+
+@io.swagger.v3.oas.annotations.parameters.RequestBody(
+	    description = "Contiene el número de orden y el peso final registrado en la balanza.",
+	    required = true,
+	    content = @Content(
+	        mediaType = "application/json",
+	        examples = {
+	            @ExampleObject(
+	                name = "Solicitud de Pesaje Final",
+	                value = """
+	                {
+	                    "numeroOrden": 401,
+	                    "pesoFinal": 25500.0
+	                }
+	                """
+	            )
+	        }
+	    )
+	)
+	@Operation(
+	    summary = "Registrar el pesaje final y realizar conciliación de la orden",
+	    description = "Recibe el número de orden y el peso final del camión (TARA + Carga). "
+	        + "La orden debe estar en estado CERRADA_PARA_CARGA y la pasa a FINALIZADO"
+	)
+	@ApiResponses({
+	    @ApiResponse(
+	        responseCode = "200",
+	        description = "Pesaje final registrado. Devuelve un objeto JSON con los resultados de la conciliación y los promedios de datos.",
+	        content = @Content(
+	            mediaType = MediaType.APPLICATION_JSON_VALUE,
+	            examples = {
+	                @ExampleObject(
+	                    name = "Resultado de Conciliación Exitosa",
+	                    value = """
+	                    {
+	                        "numeroOrden": 401,
+	                        "tara": 10000.0,
+	                        "pesoFinal": 25500.0,
+	                        "productoCargado": 15400.0,
+	                        "netoPorBalanza": 15500.0,
+	                        "diferencia": 100.0,
+	                        "promedioTemperatura": 95.5,
+	                        "promedioDensidad": 3.8,
+	                        "promedioCaudal": 98.7,
+	                        "fechaPesajeFinal": "2025-11-09T23:54:49.000Z"
+	                    }
+	                    """
+	                )
+	            }
+	        )
+	    ),
+	    @ApiResponse(
+	        responseCode = "404",
+	        description = "Orden no encontrada (`NotFoundException`). La orden no existe o no se encontró el pesaje inicial asociado.",
+	        content = @Content(mediaType = "text/plain")
+	    ),
+	    @ApiResponse(
+	        responseCode = "400",
+	        description = "Error de negocio (`BusinessException`). Posibles causas: La orden no está en un estado válido para pesaje final, o faltan datos previos.",
+	        content = @Content(mediaType = "text/plain")
+	    ),
+	    @ApiResponse(
+	        responseCode = "500",
+	        description = "Error interno del servidor.",
+	        content = @Content(mediaType = "text/plain")
+	    )
+	})
 
 	// PUNTO 5) - Conciliacion de orden
 	@PostMapping(value = "pesaje-final", produces = MediaType.APPLICATION_JSON_VALUE)
