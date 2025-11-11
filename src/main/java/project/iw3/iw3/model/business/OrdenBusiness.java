@@ -1,6 +1,7 @@
 package project.iw3.iw3.model.business;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -419,12 +420,14 @@ public class OrdenBusiness implements IOrdenBusiness {
 			}
 		}
 
+		Date fechaPesajeFinal = new java.util.Date();
+
 		// presistir cambios en la orden
 		orden.setPesoFinal(pesoFinal);
 		// cambiamos estado a Finalizada
 		orden.setEstadoOrden(EstadoOrden.FINALIZADA);
 		orden.setFechaPesajeTara(orden.getFechaPesajeTara()); // mantenemos la fecha del pesaje inicial
-		orden.setFechaCierreDeOrden(new java.util.Date());
+		orden.setFechaCierreDeOrden(fechaPesajeFinal);
 		orden.setPromedioCaudal(promedioCaudal);
 		orden.setPromedioDensidad(promedioDens);
 		orden.setPromedioTemperatura(promedioTemp);
@@ -447,7 +450,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		dto.setPromedioTemperatura(promedioTemp);
 		dto.setPromedioDensidad(promedioDens);
 		dto.setPromedioCaudal(promedioCaudal);
-		dto.setFechaPesajeFinal(new java.util.Date());
+		dto.setFechaPesajeFinal(fechaPesajeFinal);
 
 		return dto;
 	}
@@ -511,7 +514,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		}
 
 		ConciliacionDTO dto = new ConciliacionDTO(numeroOrden, tara, pesoFinal, productoCargado,
-				netoPorBalanza, diferencia, promedioTemp, promedioDens, promedioCaudal, null);
+				netoPorBalanza, diferencia, promedioTemp, promedioDens, promedioCaudal, orden.getFechaCierreDeOrden());
 		
 		return dto;
 	}
