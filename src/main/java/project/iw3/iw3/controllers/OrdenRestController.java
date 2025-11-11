@@ -207,8 +207,7 @@ public ResponseEntity<?> list() {
 		})
 @PostMapping(
     value = "/b2b",
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
+    consumes = MediaType.APPLICATION_JSON_VALUE
 )
    
 // PUNTO 1
@@ -217,7 +216,7 @@ public ResponseEntity<?> addExternal(@RequestBody String body) {
         Orden response = ordenBusiness.addExternal(body);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.LOCATION, Constants.URL_ORDEN + "/" + response.getNumeroOrden());
+        headers.set(HttpHeaders.LOCATION, Constants.URL_ORDEN + "/by-number/" + response.getNumeroOrden());
 
         return new ResponseEntity<>(headers, HttpStatus.CREATED);
 
@@ -548,15 +547,16 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 
 	// Extra: buscar por orden especifica
 
-	@GetMapping(value = "/by-number", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> getByNumeroOrden(@RequestParam("numeroOrden") Integer numeroOrden) {
-		try {
-			Orden orden = ordenBusiness.loadByNumeroOrden(numeroOrden);
-			return new ResponseEntity<>(orden, HttpStatus.OK);
-		} catch (NotFoundException e) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-		} catch (BusinessException e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-		}
+	@GetMapping(value = "/by-number/{numeroOrden}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> getByNumeroOrden(@PathVariable Integer numeroOrden) {
+	    try {
+	        Orden orden = ordenBusiness.loadByNumeroOrden(numeroOrden);
+	        return new ResponseEntity<>(orden, HttpStatus.OK);
+	    } catch (NotFoundException e) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	    } catch (BusinessException e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+	    }
 	}
+	
 }

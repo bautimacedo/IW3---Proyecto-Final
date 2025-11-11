@@ -236,7 +236,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		orden.setFechaPesajeTara(new java.util.Date());
 
 		try {
-			Orden actualizada = ordenRepository.save(orden);
+			Orden actualizada = this.update(orden);
 			log.info("Orden {} actualizada a estado {} con password {}", 
 					actualizada.getNumeroOrden(), actualizada.getEstadoOrden(), actualizada.getPassword());
 			return actualizada;
@@ -244,8 +244,6 @@ public class OrdenBusiness implements IOrdenBusiness {
 			log.error(e.getMessage(), e);
 			throw BusinessException.builder().message("Error al actualizar orden").ex(e).build();
 		}
-
-		
 
 	}
 

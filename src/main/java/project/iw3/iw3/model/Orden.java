@@ -55,7 +55,7 @@ public class Orden {
     private Float tara; // punto 2)
 
     @Column(nullable = true)
-    private Double pesoFinal; // punto 4) cuando se pesa finalmente el camion con la carga.
+    private Double pesoFinal; // punto 5) cuando se pesa finalmente el camion con la carga.
     
     
     
