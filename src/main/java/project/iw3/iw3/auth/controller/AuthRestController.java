@@ -78,7 +78,7 @@ public class AuthRestController extends BaseRestController {
 	@Autowired
 	private PasswordEncoder pEncoder;
 
-	@GetMapping(value = "/demo/encodepass", produces = MediaType.TEXT_PLAIN_VALUE)
+	@GetMapping(value = Constants.URL_BASE + "/demo/encodepass", produces = MediaType.TEXT_PLAIN_VALUE)
 	public ResponseEntity<?> encodepass(@RequestParam String password) {
 		try {
 			return new ResponseEntity<String>(pEncoder.encode(password), HttpStatus.OK);

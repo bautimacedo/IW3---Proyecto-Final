@@ -75,12 +75,12 @@ public class SecurityConfiguration {
 		// CSRF: https://developer.mozilla.org/es/docs/Glossary/CSRF
 		http.csrf(AbstractHttpConfigurer::disable);
 		http.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.POST, Constants.URL_LOGIN).permitAll() // claro obvio, no necesito tener que autenticarme para autenticarme JAJA
-				.requestMatchers("/v3/api-docs/**").permitAll().requestMatchers("/swagger-ui.html").permitAll()
-				.requestMatchers("/swagger-ui/**").permitAll().requestMatchers("/ui/**").permitAll() // permitimos swagger
-				.requestMatchers("/demo/**").permitAll().anyRequest().authenticated());
+                .requestMatchers("/v3/api-docs/**").permitAll().requestMatchers("/swagger-ui.html").permitAll()
+                .requestMatchers("/swagger-ui/**").permitAll().requestMatchers("/ui/**").permitAll() // permitimos swagger
+                .requestMatchers(Constants.URL_BASE + "/demo/**").permitAll().anyRequest().authenticated());
 		//http.httpBasic(Customizer.withDefaults()); --> otro sistema de autenticacion, lo saca.
 		http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // no quiero tener estados en http acordate
-		//http.addFilter(new JWTAuthorizationFilter(authenticationManager()));
+		http.addFilter(new JWTAuthorizationFilter(authenticationManager()));
 		return http.build();
 		// todo lo que no este en la lista blanca necesito autenticarme.*/
 	}

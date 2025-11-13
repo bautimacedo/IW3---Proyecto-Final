@@ -71,8 +71,12 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 				: request.getParameter(AuthConstants.AUTH_PARAM_NAME);
 
 		if (token != null) {
-			// Parseamos el token usando la librería
-			DecodedJWT jwt=null; 
+            token = token.trim();
+            if (token.isEmpty()) {
+                    return null;
+            }
+            // Parseamos el token usando la librería
+            DecodedJWT jwt=null; 
 			try {
 				//jwt va a ser un objeto
 				jwt = JWT.require(Algorithm.HMAC512(AuthConstants.SECRET.getBytes())).build().verify(token); //verifico el token y la clave de cifrado que es MyVerySecretKey 
