@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,6 +66,7 @@ public class CisternaRestController {
         ),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> list() {
         try {
@@ -114,6 +116,7 @@ public class CisternaRestController {
         @ApiResponse(responseCode = "404", description = "Cisterna no encontrada"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> load(@PathVariable long id) {
         try {
@@ -167,6 +170,7 @@ public class CisternaRestController {
         @ApiResponse(responseCode = "404", description = "Cisterna no encontrada"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "/by-licencia/{licencia}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> load(@PathVariable String licencia) {
         try {
@@ -213,6 +217,7 @@ public class CisternaRestController {
         @ApiResponse(responseCode = "409", description = "Cisterna con licencia duplicada"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> add(@RequestBody Cisterna cisterna) {
         try {
@@ -264,6 +269,7 @@ public class CisternaRestController {
         @ApiResponse(responseCode = "409", description = "Error por licencia duplicada"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@RequestBody Cisterna cisterna) {
         try {
@@ -303,6 +309,7 @@ public class CisternaRestController {
         @ApiResponse(responseCode = "404", description = "Cisterna no encontrada"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping(value = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
         try {

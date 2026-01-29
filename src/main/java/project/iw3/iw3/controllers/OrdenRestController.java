@@ -1,12 +1,20 @@
 package project.iw3.iw3.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
-import lombok.extern.slf4j.Slf4j;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -15,9 +23,12 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import lombok.extern.slf4j.Slf4j;
 import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.Orden;
-import project.iw3.iw3.model.business.exceptions.*;
+import project.iw3.iw3.model.business.exceptions.BusinessException;
+import project.iw3.iw3.model.business.exceptions.FoundException;
+import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.model.business.interfaces.IOrdenBusiness;
 import project.iw3.iw3.util.IStandartResponseBusiness;
 
@@ -211,6 +222,7 @@ public ResponseEntity<?> list() {
 )
    
 // PUNTO 1
+@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SAP')")
 public ResponseEntity<?> addExternal(@RequestBody String body) {
     try {
         Orden response = ordenBusiness.addExternal(body);
@@ -286,6 +298,7 @@ public ResponseEntity<?> addExternal(@RequestBody String body) {
 )
 
 //PUNTO2
+@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_TMS')")
 @PostMapping(value = "/pesaje-inicial", produces = MediaType.TEXT_PLAIN_VALUE)
 public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 
@@ -350,6 +363,7 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 	)
     
     //PUNTO 4)
+	@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLI3')")
     @PostMapping("/cerrar-carga")
     public ResponseEntity<?> closeOrder(@RequestBody JsonNode body) {
 
@@ -422,6 +436,7 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
  )
 })
     // PUNTO 3) - Recibir datos de carga desde JSON
+	@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLI3')")
 	@PostMapping(value = "/datos-carga", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> receiveLoadData(@RequestBody DatosCargaDTO datos) {
 	    try {
@@ -508,6 +523,7 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 	})
 
 	// PUNTO 5) - Conciliacion de orden
+	@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_TMS')")
 	@PostMapping(value = "pesaje-final", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> registrarPesajeFinal(@RequestBody JsonNode body) {
         try {

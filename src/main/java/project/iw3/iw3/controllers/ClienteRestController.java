@@ -2,6 +2,7 @@ package project.iw3.iw3.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,6 +68,7 @@ public class ClienteRestController {
         ),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> list() {
         try {
@@ -110,6 +112,7 @@ public class ClienteRestController {
         @ApiResponse(responseCode = "302", description = "Cliente duplicado"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> add(@RequestBody Cliente cliente) {
         try {
@@ -167,6 +170,7 @@ public class ClienteRestController {
         @ApiResponse(responseCode = "404", description = "Cliente no encontrado"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> load(@PathVariable("id") long id) {
         try {
@@ -200,6 +204,7 @@ public class ClienteRestController {
         @ApiResponse(responseCode = "404", description = "Cliente no encontrado"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "/by-name/{nombreEmpresa}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> loadByNombre(@PathVariable("nombreEmpresa") String nombreEmpresa) {
         try {
@@ -249,6 +254,7 @@ public class ClienteRestController {
         @ApiResponse(responseCode = "302", description = "Error por nombre duplicado"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@RequestBody Cliente cliente) {
         try {
@@ -288,6 +294,7 @@ public class ClienteRestController {
         @ApiResponse(responseCode = "404", description = "Cliente no encontrado"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping(value = "/{id}")
     public ResponseEntity<?> delete(@PathVariable("id") long id) {
         try {

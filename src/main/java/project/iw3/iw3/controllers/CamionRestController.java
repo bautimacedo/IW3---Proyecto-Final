@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -90,7 +91,7 @@ public class CamionRestController {
 
             @ApiResponse(responseCode = "500", description = "Internal Server Error")
         })
-    
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> list() {
         try {
@@ -148,7 +149,7 @@ public class CamionRestController {
             @ApiResponse(responseCode = "404", description = "Not Found"),
             @ApiResponse(responseCode = "500", description = "Internal Server Error")
         })
-    
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> load(@PathVariable long id) {
         try {
@@ -213,6 +214,7 @@ public class CamionRestController {
             @ApiResponse(responseCode = "404", description = "Not Found"),
             @ApiResponse(responseCode = "500", description = "Internal Server Error")
         })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(value = "/by-patente/{patente}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> load(@PathVariable String patente) {
         try {
@@ -308,6 +310,7 @@ public class CamionRestController {
     @ApiResponse(responseCode = "409", description = "Error por patente duplicada"),
     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
 })
+@PreAuthorize("hasRole('ROLE_ADMIN')")
 @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
 public ResponseEntity<?> update(@RequestBody Camion camion) {
     try {
@@ -349,6 +352,7 @@ public ResponseEntity<?> update(@RequestBody Camion camion) {
         @ApiResponse(responseCode = "404", description = "Camion no encontrado en la base de datos"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping(value = "/{id}")
     public ResponseEntity<?> delete(@PathVariable long id) {
         try {
