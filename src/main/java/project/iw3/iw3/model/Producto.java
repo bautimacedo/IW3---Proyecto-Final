@@ -32,4 +32,8 @@ public class Producto {
 
     @Column(length = 255)
     private String descripcion;
+    
+    @Column(name = "temperatura_umbral")
+    private float temperatura_umbral;
+    
 }

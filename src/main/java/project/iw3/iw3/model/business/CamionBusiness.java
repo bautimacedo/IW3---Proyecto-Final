@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CamionBusiness implements ICamionBusiness {
 	
-	  @Autowired
+	@Autowired
     private CamionRepository camionDAO;
 
     @Autowired

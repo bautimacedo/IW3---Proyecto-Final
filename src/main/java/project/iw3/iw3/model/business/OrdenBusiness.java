@@ -7,11 +7,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
+import project.iw3.iw3.events.AlarmEvent;
 import project.iw3.iw3.model.ConciliacionDTO;
 import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.DetalleCarga;
@@ -60,6 +62,9 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 	@Autowired
     private OrdenRepository ordenRepository;
+	
+	@Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 	
 	
 	@Override
@@ -284,8 +289,6 @@ public class OrdenBusiness implements IOrdenBusiness {
 	
 		Orden orden = loadByNumeroOrden(datos.getNumeroOrden());
 		
-
-	
 		if (datos.getPassword() == null || !Objects.equals(orden.getPassword(), datos.getPassword())) {
 			throw BusinessException.builder()
             .message("Error en la contraseña. Deben coincidir")
@@ -320,6 +323,19 @@ public class OrdenBusiness implements IOrdenBusiness {
 	        log.info("Orden {} - Fecha de inicio de carga registrada: {}", orden.getNumeroOrden(), orden.getFechaInicioCarga());
 	    }
 	
+	    
+	    //validación alarma temperatura. si la temperatura de los datos es mayor a la temperatura umbral, entonces tiene que saltar la alarma.
+	    if (datos.getTemperatura() > orden.getProducto().getTemperatura_umbral()) { // ==> temperatura umbarl
+	    	if(! orden.isAlarmaActivada()) {//si la alarma no estaba activada
+	    		orden.setAlarmaActivada(true);
+	    		
+	    		//lanzamos evento alarma.
+	    		applicationEventPublisher.publishEvent(new AlarmEvent(datos, orden, AlarmEvent.TypeEvent.TEMPERATURA_SUPERADA));
+	    	}
+	    }
+	    
+	    
+	    
 	    // Actualizar datos en cabecera
 	    orden.setUltimaFechaInformacion(new java.util.Date());
 	    orden.setUltimaMasaAcumulada(datos.getMasa());

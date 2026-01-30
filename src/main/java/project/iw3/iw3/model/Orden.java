@@ -104,6 +104,11 @@ public class Orden {
     @Column(nullable = true)
     private Double ultimaFlowRate; // esto es el caudal.
 
+    
+    //para las alarma. Cuando viene una temperatura superada entonces salta la alarma. Si ya salto, no tiene que saltar de nuevo hasta que sea aceptada.
+    @Column(nullable = false)
+    private boolean alarmaActivada = false;
+
 
 
 

@@ -27,6 +27,7 @@ import project.iw3.iw3.auth.filters.AuthConstants;
 import project.iw3.iw3.controllers.BaseRestController;
 import project.iw3.iw3.util.IStandartResponseBusiness;
 import project.iw3.iw3.controllers.Constants;
+import project.iw3.iw3.events.AlarmEvent;
 //import ar.edu.iw3.auth.event.UserEvent;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -37,10 +38,7 @@ public class AuthRestController extends BaseRestController {
 	@Autowired
 	private IStandartResponseBusiness response;
 	
-	@Autowired
-	private ApplicationEventPublisher applicationEventPublisher;
-
-
+	
 	@PostMapping(value = Constants.URL_LOGIN, produces = MediaType.TEXT_PLAIN_VALUE)
 	//pasamos x body
 	public ResponseEntity<?> loginExternalOnlyToken(@RequestParam String username, @RequestParam String password, HttpServletRequest request) {
@@ -71,7 +69,6 @@ public class AuthRestController extends BaseRestController {
 				.withExpiresAt(new Date(System.currentTimeMillis() + AuthConstants.EXPIRATION_TIME))
 				.sign(Algorithm.HMAC512(AuthConstants.SECRET.getBytes()));
 
-		//applicationEventPublisher.publishEvent(new UserEvent(user, request, UserEvent.TypeEvent.LOGIN));
 
 		return new ResponseEntity<String>(token, HttpStatus.OK); // devuelvo el token
 	}

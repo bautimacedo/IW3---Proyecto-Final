@@ -23,7 +23,10 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.extern.slf4j.Slf4j;
+import project.iw3.iw3.auth.User;
 import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.Orden;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
@@ -31,6 +34,7 @@ import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.model.business.interfaces.IOrdenBusiness;
 import project.iw3.iw3.util.IStandartResponseBusiness;
+import project.iw3.iw3.auth.User;
 
 
 @Slf4j
@@ -574,5 +578,29 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 	    }
 	}
+	
+	
+	//PARA MODIFICAR LAS ALARMAS
+	//TERMINAR
+	@PostMapping("/acept-alarm")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
+    public ResponseEntity<?> aceptarAlarma (@RequestParam("idAlarm") Long idAlarm) {
+        User user = getUserLogged(); //esto es para ver que operador aceptó la alarma.
+        
+        
+        //ACA IMPLEMENTAR ESTO. ES PARA ACEPTAR LA ALARMA (CAMBIAR EL ESTADO DE LA ALARMA CUYO ID ES EL QUE VIENE X idAlarm). A su vez tenes que cambiar tambien la orden
+        // la orden acordate que viene ya dentro de la alarma (en la bd guardaste la  orden) ==> fijate de revisar esto (no se como se guarda en la bd)
+        // tenes esto:
+        //@ManyToOne
+        // @JoinColumn(name = "id_order", nullable = false)
+        //private Orden orden;
+        // en el alarm event listener pusiste esto: alarm.setOrden(orden);
+        
+        /*Orden orden = ordenBusiness.acknowledgeAlarm(idAlarm, user);
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.set("Location", Constants.URL_ORDERS + "/orders/acknowledge-alarm/" + order.getId());
+        return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);*/
+    }
+	
 	
 }
