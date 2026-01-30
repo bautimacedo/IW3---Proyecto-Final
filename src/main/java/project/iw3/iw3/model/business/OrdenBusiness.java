@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
+import project.iw3.iw3.auth.IUserBusiness;
+import project.iw3.iw3.auth.User;
 import project.iw3.iw3.events.AlarmEvent;
+import project.iw3.iw3.model.Alarm;
 import project.iw3.iw3.model.ConciliacionDTO;
 import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.DetalleCarga;
@@ -21,6 +24,7 @@ import project.iw3.iw3.model.Orden;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
+import project.iw3.iw3.model.business.interfaces.IAlarmBusiness;
 import project.iw3.iw3.model.business.interfaces.ICamionBusiness;
 import project.iw3.iw3.model.business.interfaces.IChoferBusiness;
 import project.iw3.iw3.model.business.interfaces.ICisternaBusiness;
@@ -41,6 +45,9 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 	@Autowired
     private IClienteBusiness clienteBusiness;
+	
+	@Autowired
+    private IUserBusiness userBusiness;
 
     @Autowired
     private ICamionBusiness camionBusiness;
@@ -58,6 +65,9 @@ public class OrdenBusiness implements IOrdenBusiness {
 	
 	@Autowired
 	private DetalleCargaRepository detalleCargaRepository;
+	
+	@Autowired
+    private IAlarmBusiness alarmBusiness;
 
 
 	@Autowired
@@ -159,6 +169,23 @@ public class OrdenBusiness implements IOrdenBusiness {
 			log.error(e.getMessage(), e);
 			 throw BusinessException.builder().message("Error al Crear Nueva Orden").build();
 		}
+	}
+	
+	public Orden loadById(Long id) throws NotFoundException, BusinessException{
+		Optional<Orden> o;
+		try {
+			o = ordenRepository.findById(id);
+		}catch(Exception e) {
+			log.error(e.getMessage(), e);
+			throw BusinessException.builder().ex(e).message(e.getMessage()).build();
+		}
+		if (o.isEmpty()) {
+			throw NotFoundException.builder()
+					.message("No se encuentra la orden con el id = " + id)
+					.build();
+		}
+		return o.get();
+		
 	}
 	
 	@Override
@@ -531,6 +558,32 @@ public class OrdenBusiness implements IOrdenBusiness {
 				netoPorBalanza, diferencia, promedioTemp, promedioDens, promedioCaudal, orden.getFechaCierreDeOrden());
 		
 		return dto;
+	}
+	
+	
+	// funcion para manejar las alarmas
+	@Override
+	public Orden alarmaAceptada(Long idAlarm, User user) throws NotFoundException, BusinessException {
+		Alarm alarm = alarmBusiness.load(idAlarm);
+		Orden orden = loadById(alarm.getOrden().getId());
+		User userEncontrado = userBusiness.load(user.getUsername());
+		if (orden.isAlarmaActivada()) {
+            throw BusinessException.builder().message("La alarma ya fue aceptada").build();
+        }
+        if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+            throw BusinessException.builder().message("La orden no se encuentra en estado de carga").build();
+        }
+        alarm.setEstado((Alarm.Estado.ACEPTADA));
+        alarm.setUser(user);
+        alarmBusiness.update(alarm);
+        // la orden ya no tendria mas una alarma activada.
+        orden.setAlarmaActivada(false);
+        try {
+        	orden = update(orden);
+        }catch(Exception e) {
+        	throw BusinessException.builder().message("Error al actualizar la orden").build();
+        }
+        return orden;
 	}
 
 

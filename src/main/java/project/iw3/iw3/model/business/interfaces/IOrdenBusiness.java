@@ -2,6 +2,7 @@ package project.iw3.iw3.model.business.interfaces;
 
 import java.util.List;
 
+import project.iw3.iw3.auth.User;
 import project.iw3.iw3.model.ConciliacionDTO;
 import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.Orden;
@@ -36,4 +37,8 @@ public interface IOrdenBusiness {
     public ConciliacionDTO getConciliacion(Integer numeroOrden) throws NotFoundException, BusinessException;
 
 	public ConciliacionDTO registrarPesajeFinal(Integer numeroOrden, Double pesoFinal) throws NotFoundException, BusinessException;
+
+	public Orden alarmaAceptada(Long idAlarm, User user) throws NotFoundException, BusinessException;
+	
+	public Orden loadById(Long id) throws NotFoundException, BusinessException;
 }

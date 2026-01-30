@@ -143,7 +143,6 @@ public ResponseEntity<?> list() {
         );
     }
 }
-
     
    @io.swagger.v3.oas.annotations.parameters.RequestBody(
 		    description = "Datos completos de la orden, incluyendo información anidada del camión, cisterna, chofer, cliente y producto. "
@@ -596,10 +595,17 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
         //private Orden orden;
         // en el alarm event listener pusiste esto: alarm.setOrden(orden);
         
-        /*Orden orden = ordenBusiness.acknowledgeAlarm(idAlarm, user);
         HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.set("Location", Constants.URL_ORDERS + "/orders/acknowledge-alarm/" + order.getId());
-        return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);*/
+        try {
+        	Orden orden = ordenBusiness.alarmaAceptada(idAlarm, user);
+        	responseHeaders.set("Location", Constants.URL_ORDEN + orden.getId());
+            return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);
+        }catch(NotFoundException e) {
+        	return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }catch (BusinessException e) {
+        	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+        
     }
 	
 	
