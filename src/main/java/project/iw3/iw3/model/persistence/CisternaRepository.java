@@ -7,7 +7,7 @@ import project.iw3.iw3.model.Cisterna;
 @Repository
 public interface CisternaRepository extends JpaRepository<Cisterna, Long> 
 {
-     Optional<Cisterna> findByLicencia(String licencia);
+    Optional<Cisterna> findByLicencia(String licencia);
 
     Optional<Cisterna> findByLicenciaAndIdNot(String licencia, long id);
 }

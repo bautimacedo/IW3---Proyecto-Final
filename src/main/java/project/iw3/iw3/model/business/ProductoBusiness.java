@@ -135,7 +135,7 @@ public class ProductoBusiness implements IProductoBusiness {
 
 	@Override
 @Transactional
-public Producto loadOrCreate(String nombre, @Nullable String descripcion) throws BusinessException {
+public Producto loadOrCreate(String nombre, @Nullable String descripcion, Float temperatura_umbral) throws BusinessException {
     // 1) Validacion basica
     if (nombre == null || nombre.isBlank()) {
         throw new BusinessException("Producto: 'nombre' es obligatorio.");
@@ -155,6 +155,7 @@ public Producto loadOrCreate(String nombre, @Nullable String descripcion) throws
         Producto nuevo = new Producto();
         nuevo.setNombre(nom);
         nuevo.setDescripcion(descripcion); // puede ser null
+        nuevo.setTemperatura_umbral(temperatura_umbral);
         Producto saved = productDAO.save(nuevo);
         log.info("Producto creado: nombre={}", saved.getNombre());
         return saved;

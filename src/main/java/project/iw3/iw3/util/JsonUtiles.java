@@ -101,6 +101,16 @@ public final class JsonUtiles {
 		return r;
 	}
 	
+	public static float getFloat(JsonNode node, String[] attrs, float defaultValue) {
+	    for (String attr : attrs) {
+	        if (node.get(attr) != null && (node.get(attr).isFloat() || node.get(attr).isDouble())) {
+	            return node.get(attr).floatValue(); // Utilizamos floatValue() para obtener un valor float
+	        }
+	    }
+	    return defaultValue; // Si no se encuentra o el valor no es adecuado, se devuelve el valor por defecto
+	}
+
+	
 	public static int getInteger(JsonNode node, String[] attrs, int defaultValue) {
 	    for (String attr : attrs) {
 	        if (node.get(attr) != null && node.get(attr).isInt()) {
@@ -331,15 +341,17 @@ public final class JsonUtiles {
 			    JsonNode cisternasNode = camionNode.hasNonNull("tanks") ? camionNode.get("tanks") : null; 
 			    float sumatoria_preset = 0;
 			    
+			    //si vienen cisternas en el json:
 			    if(cisternasNode != null) {
 			    	for (JsonNode cisternas : cisternasNode) {
 				    	sumatoria_preset += (float) JsonUtiles.getDouble(cisternas, ConstantesJson.CISTERNA_CAPACIDAD_LITROS_ATTRIBUTES, 0);
 				    }
 				    if(sumatoria_preset < preset) {
+				    	log.error("El volumen solicitado (preset=" + preset + ") es superior a la capacidad total de las cisternas (" + sumatoria_preset + ").");
 				    	throw new IOException("El volumen solicitado (preset=" + preset + ") es superior a la capacidad total de las cisternas (" + sumatoria_preset + ").");
 				    }
 			    }
-			    
+			    // y si no viene ninguna cisterna? tendria que ver que el camion tenga asociadas cisternas?
 			
 			    // lookup / creación
 			    try {
@@ -392,10 +404,12 @@ public final class JsonUtiles {
 
     // 3) Extraer descripcion si esta
     String descripcion = getString(productoNode, new String[]{"descripcion", "description", "detail"}, null);
+    float temperatura_umbral = getFloat(productoNode, new String[]{"temp", "temperatura_umbral", "tmp"}, -0.5f);
+
 
     try {
         // 4) Crear o cargar el producto (sin lanzar excepcion si ya existe)
-        Producto producto = productoBusiness.loadOrCreate(nombre, descripcion);
+        Producto producto = productoBusiness.loadOrCreate(nombre, descripcion, temperatura_umbral);
         return producto;
     } catch (Exception e) {
         log.error("Error procesando producto {}: {}", nombre, e.getMessage());

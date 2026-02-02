@@ -29,6 +29,6 @@ public class Cisterna {
     @Column(nullable = false)
     private long capacidadLitros;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String licencia;
 }

@@ -8,6 +8,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,11 +17,13 @@ import io.micrometer.common.lang.Nullable;
 import jakarta.transaction.Transactional;
 import project.iw3.iw3.model.Camion;
 import project.iw3.iw3.model.Cisterna;
+import project.iw3.iw3.model.Orden;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
 import project.iw3.iw3.model.business.exceptions.FoundException;
 import project.iw3.iw3.model.business.exceptions.NotFoundException;
 import project.iw3.iw3.model.persistence.CamionRepository;
 import project.iw3.iw3.model.business.interfaces.*;
+import project.iw3.iw3.model.enums.EstadoOrden;
 import project.iw3.iw3.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +36,10 @@ public class CamionBusiness implements ICamionBusiness {
 
     @Autowired
     private ICisternaBusiness cisternaBusiness;
+    
+    @Autowired
+    @Lazy
+    private IOrdenBusiness ordenBusiness;
 
     @Override
     public List<Camion> list() throws BusinessException {
@@ -155,7 +162,7 @@ public class CamionBusiness implements ICamionBusiness {
 		    
 		    Optional<Camion> found = camionDAO.findByPatente(pat);
 		    
-		    // 3. verificar si vienen cisternas en el body
+		    // 3. verificar si vienen cisternas en el body 
 		    
 		    boolean cisternas_body = cisternasNode != null && cisternasNode.isArray();
 		    
@@ -163,6 +170,26 @@ public class CamionBusiness implements ICamionBusiness {
 		    if (found.isPresent()) {
 		        log.debug("Camion existente recuperado: {}", found.get().getPatente());
 		        
+		        List<Orden> ordenes  = ordenBusiness.buscarOrdenesPorCamion(found.get());
+		          	
+	        	if (ordenes.isEmpty()) { 
+	        	// si viene vacio entonces este camion existe y no esta asociado a ninguna orden
+	        	//Significa que no esta asociado a ninguna orden.
+	        		log.debug("EL CAMION NO esta en ninguna orden{}", found.get().getPatente());
+	        	
+	        	} else {// si ordenes no está empty (osea que este camion esta registrado en la bd con alguna orden) vamos a verificar que esas ordenes no esten en un estado que no sea finalizado.
+	        		
+	        		for (Orden orden : ordenes) {
+						if (orden.getEstadoOrden() != EstadoOrden.FINALIZADA) {
+							log.debug("El camion con patente " + found.get().getPatente() + "esta asociada a la orden " + orden.getId() + 
+									"cuyo estado es " + orden.getEstadoOrden() + "distinta a FINALIZADO");
+							
+							throw new BusinessException("El camion con patente " + found.get().getPatente() + "esta asociada a la orden " + orden.getId() + 
+									"cuyo estado es " + orden.getEstadoOrden() + "distinta a FINALIZADO");
+						}
+					}
+	        	
+	        	} 
 		        //modificacion si vienen nuevas cisternas
 		        if(cisternas_body) {
 		        	try{
@@ -177,7 +204,15 @@ public class CamionBusiness implements ICamionBusiness {
 		        	
 		        	
 		        }else {
-		        	return found.get();
+		        	
+		        	
+		        	if(found.get().getCisterna().isEmpty()) {// si no tiene ninguna cisterna asociada
+	        			log.error("El camion no pertenece a ninguna orden pero no tiene asociada ninguna cisterna");
+		 		        throw new BusinessException("El camion no pertenece a ninguna orden pero no tiene asociada ninguna cisterna");
+		        	}else {
+		        		return found.get();
+		        	}
+		        	
 		        }
 		        
 		        
@@ -190,6 +225,9 @@ public class CamionBusiness implements ICamionBusiness {
 		        nuevo.setPatente(pat);
 		        nuevo.setDescripcion(descripcion); // puede ser null
 		        
+		        // Persistir primero para obtener ID (necesario si crearCisternaDesdeJson llama moverCisternaACamion)
+		        nuevo = camionDAO.save(nuevo);
+		        
 			        //procesamiento de las cisternas del json
 			        if (cisternas_body) {
 			        	
@@ -198,7 +236,7 @@ public class CamionBusiness implements ICamionBusiness {
 			        	//iteramos sobre la lista de cisternas que llega en el json
 			        	for (JsonNode cisternaNode : cisternasNode) {
 			        		
-			        		Cisterna nuevaCisterna = crearCisternaDesdeJson(cisternaNode, nuevo); //nuevo acordate que es el camion.
+			        		Cisterna nuevaCisterna = crearCisternaDesdeJson(cisternaNode, nuevo); //nuevo ya tiene ID
 			        		nuevasCisternas.add(nuevaCisterna); //la agregamos al hashset
 			        	}
 			        	
@@ -217,6 +255,22 @@ public class CamionBusiness implements ICamionBusiness {
 		    }
 	}
 	
+	private Cisterna moverCisternaACamion(Cisterna cisterna, Camion camionDestino) throws BusinessException {
+	    try {
+	        // Paso 1: Eliminar la cisterna del camión origen
+	        Camion camionOrigen = cisterna.getCamion(); // Obtener el camión actual de la cisterna
+	        camionOrigen.getCisterna().remove(cisterna); // Eliminar la cisterna de la lista del camión origen
+	        cisterna.setCamion(camionDestino); // Asignar la nueva relación con el camión destino
+	        camionDestino.getCisterna().add(cisterna); // Agregar la cisterna a la lista de cisternas del camión destino
+
+	        // Paso 2: Actualizar la cisterna
+	        return cisternaBusiness.update(cisterna); // Guardar la cisterna con el nuevo camión
+
+	    } catch (Exception e) {
+	        throw new BusinessException("Error al mover la cisterna", e);
+	    }
+	}
+	
 	//clase que no tiene mucho que ver aca pero la dejamos por necesidad. Si queremos despues la cambiamos.
 	//aca falta verificar si la cisterna existe o no en la BD.
 	private Cisterna crearCisternaDesdeJson (JsonNode cisternaNode, Camion camion) throws BusinessException {
@@ -233,17 +287,37 @@ public class CamionBusiness implements ICamionBusiness {
 			Cisterna existe = cisternaBusiness.load(licencia);
 			
 			
-			
-			if(existe.getCamion() != null && existe.getCamion().getId() != camion.getId()) {
-				//aca  habria que buscar el camion a la que pertenece la sisterna, sacarselo y ponerselo a este.
-				// el camion no deberia pertenecer a ninguna orden que no este en estado finalizado o directamente que no este en ninguna orden.
-				throw new BusinessException("La cisterna con licencia " + licencia + " ya está asignada al camión: " + existe.getCamion().getPatente());
-			}
-			
-			//actualizamos los datos x las dudas
-			existe.setCapacidadLitros(capacidad);
-			existe.setCamion(camion);
-			
+			//la cisterna Existe y no pertenece al camion con el que vamos a geenrar la orden. ==> cisterna asignada a otro mionca.
+			if(existe != null && existe.getCamion() != null && existe.getCamion().getId() != camion.getId()) {
+				
+				Camion camionCisterna = existe.getCamion();
+				
+				List<Orden> ordenes = ordenBusiness.buscarOrdenesPorCamion(camionCisterna);
+				
+				if (!ordenes.isEmpty()) {
+					for (Orden orden : ordenes) {
+						if (orden.getEstadoOrden() != EstadoOrden.FINALIZADA) {
+							throw new BusinessException("La cisterna con licencia " + licencia + " ya está asignada al camión: " + existe.getCamion().getPatente() + 
+									"Y este camion esta asignado a la Orden no FINALIZADA Id = " + orden.getId());
+						}
+					}
+					//Aca entonces estamos en la situacion en que la cisterna existe, esta asociada a un camion, el camion esta asociado a una orden pero esta finalizada.
+					try {
+						existe = moverCisternaACamion(existe, camion);
+					}catch(Exception e) {
+						 throw new BusinessException(e.getMessage(), e);
+					}
+				}else {
+					//Aca estamos en el caso de que el camion no esta asociado a ninguna orden
+					try {
+						existe = moverCisternaACamion(existe, camion);
+					}catch(Exception e) {
+						 throw new BusinessException(e.getMessage(), e);
+					}
+				}
+				
+				
+			}			
 			return (existe);
 			
 			
@@ -267,7 +341,7 @@ public class CamionBusiness implements ICamionBusiness {
 	private Camion updateCisternas (Camion camion, JsonNode cisternasNode) throws BusinessException {
 		
 		
-		// 1. Crear un mapa de las cisternas actuales del Camion para búsqueda rápida por LICENCIA
+		// 1. convertir una lista de objetos Cisterna (asociados a un objeto Camion) en un Map en el que la clave es el valor de Licencia de cada Cisterna y el valor es el propio objeto Cisterna.
 	    Map<String, Cisterna> cisternasActuales = camion.getCisterna().stream()
 	            .collect(Collectors.toMap(Cisterna::getLicencia, Function.identity()));
 	    
@@ -277,8 +351,10 @@ public class CamionBusiness implements ICamionBusiness {
 		
 		for (JsonNode cisternaNode : cisternasNode) {
 			
-			 Cisterna cisternaFromJson = crearCisternaDesdeJson(cisternaNode, camion); 
-		     String licencia = cisternaFromJson.getLicencia();
+			 Cisterna cisternaFromJson = crearCisternaDesdeJson(cisternaNode, camion);
+		     /*String licencia = cisternaFromJson.getLicencia();
+		     
+		       
 		     if (cisternasActuales.containsKey(licencia)) {
 		            // A) ACTUALIZACIÓN: La cisterna YA EXISTE en el Camion.
 		            Cisterna existente = cisternasActuales.get(licencia);
@@ -294,8 +370,8 @@ public class CamionBusiness implements ICamionBusiness {
 		        } else {
 		            // B) INSERCIÓN/ASIGNACIÓN: La cisterna es NUEVA para este camión (ya sea que exista en BD sin asignación o sea nueva)
 		            // La entidad `cisternaFromJson` viene ya construida y ligada al camión actual por `crearCisternaDesdeJson`.
-		            cisternasActualizadas.add(cisternaFromJson);
-		        }
+		            cisternasActualizadas.add(cisternaFromJson);*/
+		      cisternasActualizadas.add(cisternaFromJson);
 		}
 		// 3. SINCRONIZACIÓN
 	    

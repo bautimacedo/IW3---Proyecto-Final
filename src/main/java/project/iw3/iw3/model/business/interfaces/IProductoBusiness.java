@@ -22,6 +22,6 @@ public interface IProductoBusiness {
     
     public void delete(long id) throws NotFoundException, BusinessException;
     
-    public Producto loadOrCreate(String nombre, @Nullable String descripcion) throws BusinessException;
+    public Producto loadOrCreate(String nombre, @Nullable String descripcion, Float temperatura_umbral) throws BusinessException;
 
 }

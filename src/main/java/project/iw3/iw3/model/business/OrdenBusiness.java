@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +18,7 @@ import project.iw3.iw3.auth.IUserBusiness;
 import project.iw3.iw3.auth.User;
 import project.iw3.iw3.events.AlarmEvent;
 import project.iw3.iw3.model.Alarm;
+import project.iw3.iw3.model.Camion;
 import project.iw3.iw3.model.ConciliacionDTO;
 import project.iw3.iw3.model.DatosCargaDTO;
 import project.iw3.iw3.model.DetalleCarga;
@@ -50,6 +52,7 @@ public class OrdenBusiness implements IOrdenBusiness {
     private IUserBusiness userBusiness;
 
     @Autowired
+    @Lazy
     private ICamionBusiness camionBusiness;
 
     @Autowired
@@ -564,28 +567,42 @@ public class OrdenBusiness implements IOrdenBusiness {
 	// funcion para manejar las alarmas
 	@Override
 	public Orden alarmaAceptada(Long idAlarm, User user) throws NotFoundException, BusinessException {
-		Alarm alarm = alarmBusiness.load(idAlarm);
-		Orden orden = loadById(alarm.getOrden().getId());
-		User userEncontrado = userBusiness.load(user.getUsername());
-		if (orden.isAlarmaActivada()) {
-            throw BusinessException.builder().message("La alarma ya fue aceptada").build();
-        }
-        if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
-            throw BusinessException.builder().message("La orden no se encuentra en estado de carga").build();
-        }
-        alarm.setEstado((Alarm.Estado.ACEPTADA));
-        alarm.setUser(user);
-        alarmBusiness.update(alarm);
-        // la orden ya no tendria mas una alarma activada.
-        orden.setAlarmaActivada(false);
-        try {
-        	orden = update(orden);
-        }catch(Exception e) {
-        	throw BusinessException.builder().message("Error al actualizar la orden").build();
-        }
-        return orden;
+		try {
+			Alarm alarm = alarmBusiness.load(idAlarm);
+			Orden orden = loadById(alarm.getOrden().getId());
+			User userEncontrado = userBusiness.load(user.getUsername());
+			if (!orden.isAlarmaActivada()) {
+	            throw BusinessException.builder().message("La alarma ya fue aceptada").build();
+	        }
+	        if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
+	            throw BusinessException.builder().message("La orden no se encuentra en estado de carga").build();
+	        }
+	        alarm.setEstado((Alarm.Estado.ACEPTADA));
+	        alarm.setUser(user);
+	        alarmBusiness.update(alarm);
+	        // la orden ya no tendria mas una alarma activada.
+	        orden.setAlarmaActivada(false);
+	        try {
+	        	orden = update(orden);
+	        }catch(Exception e) {
+	        	throw BusinessException.builder().message("Error al actualizar la orden").build();
+	        }
+	        return orden;
+		}catch(Exception e) {
+			throw new BusinessException(e.getMessage(), e);
+		}
 	}
 
+	
+	public List<Orden> buscarOrdenesPorCamion(Camion camion) throws BusinessException {// Obtiene las órdenes por el camion
+		
+		try {
+			return ordenRepository.findByCamion(camion);
+		}catch(Exception e) {
+			throw BusinessException.builder().message("Error interno en buscarOrdenesPorCamion").build();
+		}
+         
+    }
 
 
 
