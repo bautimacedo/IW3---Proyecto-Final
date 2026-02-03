@@ -581,7 +581,7 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 	
 	//PARA MODIFICAR LAS ALARMAS
 	//TERMINAR
-	@PostMapping("/acept-alarm")
+	@PostMapping("/accept-alarm")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
     public ResponseEntity<?> aceptarAlarma (@RequestParam("idAlarm") Long idAlarm) {
         User user = getUserLogged(); //esto es para ver que operador aceptó la alarma.

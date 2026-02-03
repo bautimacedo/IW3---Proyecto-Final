@@ -87,8 +87,9 @@ public class BuildEntityUtiles {
         	
         	
         }
-        
-    	camion.setCisterna(cisternas);
+        // No reemplazar la colección (orphanRemoval): modificar la misma instancia
+    	camion.getCisterna().clear();
+    	camion.getCisterna().addAll(cisternas);
     	return camion;    
         
 	}

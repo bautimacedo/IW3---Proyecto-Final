@@ -239,8 +239,9 @@ public class CamionBusiness implements ICamionBusiness {
 			        		Cisterna nuevaCisterna = crearCisternaDesdeJson(cisternaNode, nuevo); //nuevo ya tiene ID
 			        		nuevasCisternas.add(nuevaCisterna); //la agregamos al hashset
 			        	}
-			        	
-			        	nuevo.setCisterna(nuevasCisternas);
+			        	// No reemplazar la colección (orphanRemoval): modificar la misma instancia
+			        	nuevo.getCisterna().clear();
+			        	nuevo.getCisterna().addAll(nuevasCisternas);
 			        }
 		        
 		        Camion saved = camionDAO.save(nuevo);
