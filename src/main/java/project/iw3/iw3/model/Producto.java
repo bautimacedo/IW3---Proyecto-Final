@@ -34,6 +34,6 @@ public class Producto {
     private String descripcion;
     
     @Column(name = "temperatura_umbral")
-    private float temperatura_umbral;
+    private Float temperatura_umbral;
     
 }

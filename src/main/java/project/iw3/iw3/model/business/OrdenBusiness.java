@@ -1,8 +1,11 @@
 package project.iw3.iw3.model.business;
 
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -22,6 +25,7 @@ import project.iw3.iw3.model.Alarm;
 import project.iw3.iw3.model.Camion;
 import project.iw3.iw3.model.ConciliacionDTO;
 import project.iw3.iw3.model.DatosCargaDTO;
+import project.iw3.iw3.model.HistorialCargaDTO;
 import project.iw3.iw3.model.DetalleCarga;
 import project.iw3.iw3.model.Orden;
 import project.iw3.iw3.model.business.exceptions.BusinessException;
@@ -113,6 +117,27 @@ public class OrdenBusiness implements IOrdenBusiness {
 		}
 		return o.get();
 		
+	}
+
+	@Override
+	public List<HistorialCargaDTO> getHistorialCargaByNumeroOrden(Integer numeroOrden) throws NotFoundException, BusinessException {
+		Orden orden = load(numeroOrden);
+		List<DetalleCarga> detalles = detalleCargaRepository.findByOrdenIdOrderByEstampaTiempoAsc(orden.getId());
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault());
+		return detalles.stream()
+			.map(d -> {
+				String fechaHora = d.getEstampaTiempo() != null
+					? formatter.format(d.getEstampaTiempo().toInstant())
+					: null;
+				return new HistorialCargaDTO(
+					fechaHora,
+					d.getTemperatura(),
+					d.getMasaAcumulada(),
+					d.getDensidad(),
+					d.getCaudal()
+				);
+			})
+			.collect(Collectors.toList());
 	}
 
 	@Override

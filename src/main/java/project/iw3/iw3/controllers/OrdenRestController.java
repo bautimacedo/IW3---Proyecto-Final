@@ -577,6 +577,22 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 	    }
 	}
+
+	@Operation(
+		summary = "Historial de datos de carga",
+		description = "Devuelve el historial de datos de carga de una orden para graficar temperatura durante la carga. Cada elemento representa un envío de datos (POST /datos-carga)."
+	)
+	@GetMapping(value = "/by-number/{numeroOrden}/historial-carga", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> getHistorialCarga(@PathVariable Integer numeroOrden) {
+	    try {
+	        var historial = ordenBusiness.getHistorialCargaByNumeroOrden(numeroOrden);
+	        return new ResponseEntity<>(historial, HttpStatus.OK);
+	    } catch (NotFoundException e) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	    } catch (BusinessException e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+	    }
+	}
 	
 	
 	//PARA MODIFICAR LAS ALARMAS

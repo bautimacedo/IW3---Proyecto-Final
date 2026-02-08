@@ -44,6 +44,8 @@ public class SecurityConfiguration {
 
 	    // 1. Ponemos tus dominios específicos. Es mucho más seguro y compatible que "*"
 	    config.setAllowedOrigins(List.of(
+			"http://localhost:5173",
+			"http://127.0.0.1:5173",
 	        "https://bruno.garibaldi.mooo.com",
 	        "https://agustinrodeyro.ddns.net",
 	        "https://macedobautista.chickenkiller.com"
@@ -63,6 +65,7 @@ public class SecurityConfiguration {
 	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 	    // Se aplica a tus rutas de API
 	    source.registerCorsConfiguration(Constants.URL_BASE + "/**", config);
+		source.registerCorsConfiguration("/ws/**", config);
 
 	    return source;
 	}

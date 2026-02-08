@@ -6,4 +6,6 @@ import project.iw3.iw3.model.DetalleCarga;
 
 public interface DetalleCargaRepository extends JpaRepository<DetalleCarga, Long> {
     List<DetalleCarga> findByOrdenId(Long ordenId);
+
+    List<DetalleCarga> findByOrdenIdOrderByEstampaTiempoAsc(Long ordenId);
 }
