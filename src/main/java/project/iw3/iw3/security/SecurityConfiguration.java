@@ -40,32 +40,31 @@ public class SecurityConfiguration {
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
-		// Objeto que define las reglas CORS
-		CorsConfiguration config = new CorsConfiguration();
+	    CorsConfiguration config = new CorsConfiguration();
 
-		// Origen permitido: Aca hay q poner el puerto del front. Solo las peticiones
-		// que vengan de este puerto van a ser aceptadas por el backend.
-		//config.setAllowedOrigins(List.of("http://127.0.0.1:5500"));
-		config.setAllowedOrigins(List.of("*"));
- 		//CAMBIAR ESTO EN PRODUCCION
-		
-		// Métodos HTTP permitidos
-		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+	    // 1. Ponemos tus dominios específicos. Es mucho más seguro y compatible que "*"
+	    config.setAllowedOrigins(List.of(
+	        "https://bruno.garibaldi.mooo.com",
+	        "https://agustinrodeyro.ddns.net",
+	        "https://macedobautista.chickenkiller.com"
+	    ));
 
-		// Headers permitidos en la petición, ponemos content type y authorization
-		// porque enviamos datos en el body y el jwt en el header.
-		config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
-		
+	    // 2. AGREGAMOS 'OPTIONS' - Esto es vital para que el navegador no rebote el preflight
+	    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-		// Lo dejamos en false porque no usamos cookies
-		config.setAllowCredentials(false);
+	    // 3. Permitimos todos los headers para evitar bloqueos por headers automáticos
+	    config.setAllowedHeaders(List.of("*"));
+	    
+	    // 4. Exponemos el header de Authorization por si el front necesita leerlo
+	    config.setExposedHeaders(List.of("Authorization"));
 
-		// Aca definimos a que URLs se plican las reglas
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		// Se lo aplicamos a todas las URLs que empiezan con /api/v1/
-		source.registerCorsConfiguration(Constants.URL_BASE + "/**", config);
+	    config.setAllowCredentials(true);
 
-		return source;
+	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+	    // Se aplica a tus rutas de API
+	    source.registerCorsConfiguration(Constants.URL_BASE + "/**", config);
+
+	    return source;
 	}
 
 	@Autowired
