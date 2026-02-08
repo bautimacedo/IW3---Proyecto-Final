@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -78,6 +79,9 @@ public class OrdenBusiness implements IOrdenBusiness {
 	
 	@Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+	@Autowired
+	private SimpMessagingTemplate messagingTemplate; 
 	
 	
 	@Override
@@ -385,6 +389,9 @@ public class OrdenBusiness implements IOrdenBusiness {
 
 	        detalleCargaRepository.save(detalle); //  inserta el registro histórico
 
+
+			//Enviamos el mensaje a traves de WebSocket
+			messagingTemplate.convertAndSend("/topic/temperaturas", datos.getTemperatura());
 	        return this.update(orden);
 	    } catch (Exception e) {
 	        log.error(e.getMessage(), e);

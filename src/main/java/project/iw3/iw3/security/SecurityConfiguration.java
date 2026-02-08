@@ -87,6 +87,7 @@ public class SecurityConfiguration {
 		http.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.POST, Constants.URL_LOGIN).permitAll() // claro obvio, no necesito tener que autenticarme para autenticarme JAJA
                 .requestMatchers("/v3/api-docs/**").permitAll().requestMatchers("/swagger-ui.html").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll().requestMatchers("/ui/**").permitAll() // permitimos swagger
+				.requestMatchers("/ws/**").permitAll() // permitimos websocket
                 .requestMatchers(Constants.URL_BASE + "/demo/**").permitAll().anyRequest().authenticated());
 		//http.httpBasic(Customizer.withDefaults()); --> otro sistema de autenticacion, lo saca.
 		http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // no quiero tener estados en http acordate
