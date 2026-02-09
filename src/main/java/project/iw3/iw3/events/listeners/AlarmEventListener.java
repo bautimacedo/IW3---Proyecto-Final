@@ -42,6 +42,17 @@ public class AlarmEventListener implements ApplicationListener<AlarmEvent> {
 
 	private void handlerTemperaturaSuperada(DatosCargaDTO datos, Orden orden) {
 		
+		    try {
+				if (alarmBusiness.existsPendingAlarm(orden)) {
+					log.info("Ya existe alarma pendiente para orden {}", orden.getNumeroOrden());
+					return;
+				}
+			} catch (BusinessException e) {
+				log.error("Error verificando alarmas pendientes", e);
+				return;
+			}
+
+		
 		//primero creamos la alarma
 		
 		Alarm alarm = new Alarm();

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import project.iw3.iw3.auth.IUserBusiness;
 import project.iw3.iw3.auth.User;
@@ -597,33 +598,48 @@ public class OrdenBusiness implements IOrdenBusiness {
 	
 	
 	// funcion para manejar las alarmas
+	@Transactional
 	@Override
-	public Orden alarmaAceptada(Long idAlarm, User user) throws NotFoundException, BusinessException {
-		try {
-			Alarm alarm = alarmBusiness.load(idAlarm);
-			Orden orden = loadById(alarm.getOrden().getId());
-			User userEncontrado = userBusiness.load(user.getUsername());
-			if (!orden.isAlarmaActivada()) {
-	            throw BusinessException.builder().message("La alarma ya fue aceptada").build();
-	        }
-	        if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
-	            throw BusinessException.builder().message("La orden no se encuentra en estado de carga").build();
-	        }
-	        alarm.setEstado((Alarm.Estado.ACEPTADA));
-	        alarm.setUser(user);
-	        alarmBusiness.update(alarm);
-	        // la orden ya no tendria mas una alarma activada.
-	        orden.setAlarmaActivada(false);
-	        try {
-	        	orden = update(orden);
-	        }catch(Exception e) {
-	        	throw BusinessException.builder().message("Error al actualizar la orden").build();
-	        }
-	        return orden;
-		}catch(Exception e) {
-			throw new BusinessException(e.getMessage(), e);
+	public Orden alarmaAceptada(Long idAlarm, User user)
+			throws NotFoundException, BusinessException {
+
+		//  cargar alarma
+		Alarm alarm = alarmBusiness.load(idAlarm);
+
+		//  validar estado alarma
+		if (alarm.getEstado() == Alarm.Estado.ACEPTADA) {
+			throw BusinessException.builder()
+					.message("La alarma ya fue aceptada")
+					.build();
 		}
+
+		//  obtener orden asociada
+		Orden orden = alarm.getOrden();
+
+		//  obtener usuario persistente
+		User userPersistente = userBusiness.load(user.getUsername());
+
+		//  aceptar alarma
+		alarm.setEstado(Alarm.Estado.ACEPTADA);
+		alarm.setUser(userPersistente);
+
+		alarmBusiness.update(alarm);
+
+		//  desactivar flag en orden
+		orden.setAlarmaActivada(false);
+
+		try {
+			orden = update(orden);
+		} catch (Exception e) {
+			throw BusinessException.builder()
+					.message("Error al actualizar la orden")
+					.ex(e)
+					.build();
+		}	
+
+		return orden;
 	}
+
 
 	
 	public List<Orden> buscarOrdenesPorCamion(Camion camion) throws BusinessException {// Obtiene las órdenes por el camion
