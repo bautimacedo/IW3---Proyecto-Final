@@ -45,7 +45,7 @@ public class SecurityConfiguration {
 
 		// Origen permitido: Aca hay q poner el puerto del front. Solo las peticiones
 		// que vengan de este puerto van a ser aceptadas por el backend.
-		config.setAllowedOrigins(List.of("http://127.0.0.1:5500"));
+		config.setAllowedOrigins(List.of("http://localhost:5173"));
 
 		// Métodos HTTP permitidos
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
