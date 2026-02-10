@@ -415,10 +415,11 @@ public class OrdenBusiness implements IOrdenBusiness {
 	        detalleCargaRepository.save(detalle); //  inserta el registro histórico
 
 
-			//Enviamos el mensaje a traves de WebSocket
-			messagingTemplate.convertAndSend("/topic/temperaturas", datos.getTemperatura());
-			messagingTemplate.convertAndSend("/topic/densidad", datos.getDensidad());
-			messagingTemplate.convertAndSend("/topic/caudal", datos.getCaudal());
+			// Enviamos como String en el body para que el front (parseNumber) reciba siempre un formato consistente
+			messagingTemplate.convertAndSend("/topic/temperaturas", datos.getTemperatura() != null ? String.valueOf(datos.getTemperatura()) : "");
+			messagingTemplate.convertAndSend("/topic/densidad", datos.getDensidad() != null ? String.valueOf(datos.getDensidad()) : "");
+			messagingTemplate.convertAndSend("/topic/caudal", datos.getCaudal() != null ? String.valueOf(datos.getCaudal()) : "");
+			log.debug("WS enviado orden {}: temp={}, densidad={}, caudal={}", orden.getNumeroOrden(), datos.getTemperatura(), datos.getDensidad(), datos.getCaudal());
 
 	        return this.update(orden);
 	    } catch (Exception e) {

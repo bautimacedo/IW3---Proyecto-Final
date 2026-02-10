@@ -27,15 +27,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
     
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/temperaturas");
-        registry.addEndpoint("/temperatures").withSockJS();
-
-        registry.addEndpoint("/caudal");
-        registry.addEndpoint("/caudal").withSockJS();
-
-        registry.addEndpoint("/densidad");
-        registry.addEndpoint("/densidad").withSockJS();
-
+        // Un solo endpoint de conexión: el cliente se conecta aquí y se suscribe a /topic/temperaturas, /topic/densidad, /topic/caudal
+        registry.addEndpoint("/temperaturas").setAllowedOriginPatterns("*").withSockJS();
+        registry.addEndpoint("/temperatures").setAllowedOriginPatterns("*").withSockJS();
     }
 
 }
