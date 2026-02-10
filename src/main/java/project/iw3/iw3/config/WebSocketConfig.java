@@ -30,6 +30,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         registry.addEndpoint("/temperaturas");
         registry.addEndpoint("/temperatures").withSockJS();
 
+        registry.addEndpoint("/caudal");
+        registry.addEndpoint("/caudal").withSockJS();
+
+        registry.addEndpoint("/densidad");
+        registry.addEndpoint("/densidad").withSockJS();
+
     }
 
 }
