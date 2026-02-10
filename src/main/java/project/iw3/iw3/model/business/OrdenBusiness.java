@@ -125,7 +125,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 		List<DetalleCarga> detalles = detalleCargaRepository.findByOrdenIdOrderByEstampaTiempoAsc(orden.getId());
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault());
 		return detalles.stream()
-			.map(d -> {
+			.map(d -> { //Convierte cada detalle de carga en un HistorialCargaDTO.
 				String fechaHora = d.getEstampaTiempo() != null
 					? formatter.format(d.getEstampaTiempo().toInstant())
 					: null;
@@ -137,7 +137,7 @@ public class OrdenBusiness implements IOrdenBusiness {
 					d.getCaudal()
 				);
 			})
-			.collect(Collectors.toList());
+			.collect(Collectors.toList()); //Devuelve la lista de historial de carga.
 	}
 
 	@Override
