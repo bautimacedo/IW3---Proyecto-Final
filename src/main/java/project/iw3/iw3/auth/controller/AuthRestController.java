@@ -84,4 +84,11 @@ public class AuthRestController extends BaseRestController {
 					HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+	@GetMapping(Constants.URL_BASE + "/auth/me")
+	public ResponseEntity<?> me(Authentication auth) {
+		User user = (User) auth.getPrincipal();
+		return ResponseEntity.ok(user);
+}
+
 }
