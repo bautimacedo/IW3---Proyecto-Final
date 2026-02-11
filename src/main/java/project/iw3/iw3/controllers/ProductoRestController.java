@@ -268,7 +268,51 @@ public class ProductoRestController {
     @PutMapping(value = "", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> update(@RequestBody Producto producto) {
         try {
+            if (producto.getId() <= 0) {
+                return new ResponseEntity<>(
+                    responseBuilder.build(HttpStatus.BAD_REQUEST, new IllegalArgumentException("id inválido"), "El body debe incluir un id de producto válido (mayor a 0)"),
+                    HttpStatus.BAD_REQUEST
+                );
+            }
             productoBusiness.update(producto);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (NotFoundException e) {
+            return new ResponseEntity<>(
+                responseBuilder.build(HttpStatus.NOT_FOUND, e, e.getMessage()),
+                HttpStatus.NOT_FOUND
+            );
+        } catch (FoundException e) {
+            return new ResponseEntity<>(
+                responseBuilder.build(HttpStatus.FOUND, e, e.getMessage()),
+                HttpStatus.FOUND
+            );
+        } catch (BusinessException e) {
+            return new ResponseEntity<>(
+                responseBuilder.build(HttpStatus.INTERNAL_SERVER_ERROR, e, e.getMessage()),
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    @Operation(
+        summary = "Actualizar un producto por ID en la URL",
+        description = "Permite modificar un producto existente indicando el id en la ruta. El body solo debe contener nombre, descripcion, temperatura_umbral."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Producto actualizado correctamente"),
+        @ApiResponse(responseCode = "404", description = "Producto no encontrado"),
+        @ApiResponse(responseCode = "302", description = "Nombre duplicado"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateById(@PathVariable("id") long id, @RequestBody Producto body) {
+        try {
+            Producto existing = productoBusiness.load(id);
+            if (body.getNombre() != null) existing.setNombre(body.getNombre());
+            if (body.getDescripcion() != null) existing.setDescripcion(body.getDescripcion());
+            if (body.getTemperatura_umbral() != null) existing.setTemperatura_umbral(body.getTemperatura_umbral());
+            productoBusiness.update(existing);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (NotFoundException e) {
             return new ResponseEntity<>(

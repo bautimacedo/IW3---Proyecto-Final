@@ -112,6 +112,11 @@ public class ProductoBusiness implements IProductoBusiness {
 
         try {
             productDAO.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("No se puede eliminar producto id={}: tiene datos asociados (órdenes, etc.)", id);
+            throw BusinessException.builder()
+                .message("No se puede eliminar el producto: tiene órdenes u otros datos asociados.")
+                .ex(e).build();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw BusinessException.builder().ex(e).build();

@@ -600,7 +600,10 @@ public ResponseEntity<?> registerInitialWeighing(@RequestBody JsonNode body) {
 	@PostMapping("/accept-alarm")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
     public ResponseEntity<?> aceptarAlarma (@RequestParam("idAlarm") Long idAlarm) {
-        User user = getUserLogged(); //esto es para ver que operador aceptó la alarma.
+        if (idAlarm == null || idAlarm <= 0) {
+            return ResponseEntity.badRequest().body("idAlarm es obligatorio y debe ser mayor a 0");
+        }
+        User user = getUserLogged();
         
         
         //ACA IMPLEMENTAR ESTO. ES PARA ACEPTAR LA ALARMA (CAMBIAR EL ESTADO DE LA ALARMA CUYO ID ES EL QUE VIENE X idAlarm). A su vez tenes que cambiar tambien la orden

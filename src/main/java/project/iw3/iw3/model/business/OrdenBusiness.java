@@ -606,25 +606,24 @@ public class OrdenBusiness implements IOrdenBusiness {
 		try {
 			Alarm alarm = alarmBusiness.load(idAlarm);
 			Orden orden = loadById(alarm.getOrden().getId());
-			User userEncontrado = userBusiness.load(user.getUsername());
+			userBusiness.load(user.getUsername()); // valida que el usuario exista
 			if (!orden.isAlarmaActivada()) {
 	            throw BusinessException.builder().message("La alarma ya fue aceptada").build();
 	        }
-	        if (orden.getEstadoOrden() != EstadoOrden.CON_PESAJE_INICIAL) {
-	            throw BusinessException.builder().message("La orden no se encuentra en estado de carga").build();
-	        }
-	        alarm.setEstado((Alarm.Estado.ACEPTADA));
+	        // Permitir aceptar alarma en cualquier estado de la orden (incl. FINALIZADA, CERRADA_PARA_CARGA)
+	        alarm.setEstado(Alarm.Estado.ACEPTADA);
 	        alarm.setUser(user);
 	        alarmBusiness.update(alarm);
-	        // la orden ya no tendria mas una alarma activada.
 	        orden.setAlarmaActivada(false);
 	        try {
 	        	orden = update(orden);
-	        }catch(Exception e) {
+	        } catch (Exception e) {
 	        	throw BusinessException.builder().message("Error al actualizar la orden").build();
 	        }
 	        return orden;
-		}catch(Exception e) {
+		} catch (NotFoundException | BusinessException e) {
+			throw e;
+		} catch (Exception e) {
 			throw new BusinessException(e.getMessage(), e);
 		}
 	}
