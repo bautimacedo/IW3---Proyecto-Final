@@ -12,6 +12,8 @@ public final class Constants {
 	public static final String URL_ORDEN = URL_BASE + "/orden";
 	public static final String URL_ALARMS = URL_BASE + "/alarms";
 	public static final String URL_MAIL = URL_BASE + "/mail";
+	public static final String URL_USER = URL_BASE + "/user";
+	public static final String URL_ROLE = URL_BASE + "/role";
 		
 	public static final String URL_LOGIN = URL_BASE + "/login";
 

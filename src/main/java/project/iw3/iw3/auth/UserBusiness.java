@@ -82,5 +82,60 @@ public class UserBusiness implements IUserBusiness {
 			throw BusinessException.builder().ex(e).build();
 		}
 	}
+	
+	@Override
+	public User update(User user) throws NotFoundException, BusinessException {
+	    // Verificamos que el usuario exista antes de intentar actualizarlo
+		
+		try {
+			User usuario = load(user.getUsername()); 
+			user.setIdUser(usuario.getIdUser());
+			return userDAO.save(user);
+		}catch(Exception e) {
+			log.error("Error al actualizar el usuario: " + e.getMessage(), e);
+	        throw BusinessException.builder().ex(e).build();
+		}
+	    
+	}
+	
+	@Override 
+    public User addRole(Role role, User user) throws NotFoundException, BusinessException{
+		 
+		try {
+			user.getRoles().add(role);
+			return update(user);
+		}catch(NotFoundException e) {
+			throw NotFoundException.builder()
+            .message("No se pudo agregar el rol. No se encuentra el usuari@: " + user.getUsername())
+            .build();
+		}catch(BusinessException e) {
+			log.error("Error al agregar un rol a usuario: " + e.getMessage(), e);
+	        throw BusinessException.builder().ex(e).build();
+		}
+	}
+	
+	@Override
+	public User deleteRole(Role role, User user) throws NotFoundException, BusinessException {
+	    try {
+	        
+	        if (user.getRoles().contains(role)) {
+	            user.getRoles().remove(role);
+	            return update(user);
+	        }
+	        
+	        // Si no lo tiene, devolvemos al usuario sin cambios
+	        return user; 
+
+	    } catch (NotFoundException e) {
+	        throw NotFoundException.builder()
+	                .message("No se pudo quitar el rol. No se encuentra el usuari@: " + user.getUsername())
+	                .build();
+	    } catch (BusinessException e) {
+	        log.error("Error al quitar el rol al usuario: " + e.getMessage(), e);
+	        throw BusinessException.builder().ex(e).build();
+	    }
+	}
+	
+	
 
 }

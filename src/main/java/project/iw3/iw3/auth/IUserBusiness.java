@@ -19,4 +19,10 @@ public interface IUserBusiness {
 	
 	public List<User> list() throws BusinessException;
 
+	User update(User user) throws NotFoundException, BusinessException;
+
+	User addRole(Role role, User user) throws NotFoundException, BusinessException;
+	
+	User deleteRole(Role role, User user) throws NotFoundException, BusinessException;
+
 }
